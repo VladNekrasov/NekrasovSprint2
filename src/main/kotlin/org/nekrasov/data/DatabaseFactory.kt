@@ -7,6 +7,9 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.nekrasov.domain.tabels.*
+import org.nekrasov.domain.tabels.status.MessageStatusTable
+import org.nekrasov.domain.tabels.status.UserChatStatusTable
+import org.nekrasov.domain.tabels.status.UserStatusTable
 
 object DatabaseFactory {
     fun init(config: ApplicationConfig) {
@@ -21,30 +24,17 @@ object DatabaseFactory {
             password = password
         )
         transaction(database) {
-            exec("do \$\$\n" +
-                    "    begin\n" +
-                    "        if not exists (select 1 from pg_type where typname = 'messagestatusenum') then\n" +
-                    "            CREATE TYPE MessageStatusEnum AS ENUM ('Read', 'Unread', 'Deleted');\n" +
-                    "        end if;\n" +
-                    "    end \$\$;")
-            exec("do \$\$\n" +
-                    "    begin\n" +
-                    "        if not exists (select 1 from pg_type where typname = 'userchatstatusenum') then\n" +
-                    "            CREATE TYPE UserChatStatusEnum AS ENUM ('Admin', 'Restricted', 'Ban', 'Standard', 'Left');\n" +
-                    "        end if;\n" +
-                    "    end \$\$;")
-            exec("do \$\$\n" +
-                    "    begin\n" +
-                    "        if not exists (select 1 from pg_type where typname = 'userstatusenum') then\n" +
-                    "            CREATE TYPE UserStatusEnum AS ENUM ('Empty', 'Online', 'Offline', 'Restricted', 'Ban', 'Deleted');\n" +
-                    "        end if;\n" +
-                    "    end \$\$;")
-            SchemaUtils.create(ChatTable)
-            SchemaUtils.create(ForwardMessageTable)
-            SchemaUtils.create(MessageTable)
-            SchemaUtils.create(MessageUserStatusTable)
-            SchemaUtils.create(UserChatTable)
-            SchemaUtils.create(UserTable)
+            SchemaUtils.create(
+                MessageStatusTable,
+                UserChatStatusTable,
+                UserStatusTable,
+                ChatTable,
+                ForwardMessageTable,
+                MessageTable,
+                MessageUserStatusTable,
+                UserChatTable,
+                UserTable
+            )
         }
     }
     suspend fun <T> dbQuery(block: suspend () -> T): T =

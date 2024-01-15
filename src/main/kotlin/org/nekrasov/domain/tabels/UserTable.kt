@@ -2,9 +2,9 @@ package org.nekrasov.domain.tabels
 
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
+import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.datetime
-import org.nekrasov.tabels.status.PGEnum
-import org.nekrasov.tabels.status.UserStatus
+import org.nekrasov.domain.tabels.status.UserStatusTable
 import java.time.LocalDateTime
 
 object UserTable : LongIdTable("user") {
@@ -15,10 +15,11 @@ object UserTable : LongIdTable("user") {
     val email: Column<String> = varchar("email", 255)
     val photo: Column<String> = varchar("photo", 100)
     val bio: Column<String?> = varchar("bio", 200).nullable()
-    val status = customEnumeration("status","UserStatusEnum",{value -> UserStatus.valueOf(value as String)}, { PGEnum("UserStatusEnum", it) })
+    val statusId: Column<Int> = integer("status_id")
+        .references(UserStatusTable.id, onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
     val deleted: Column<Boolean> = bool("deleted")
     val restricted: Column<Boolean> = bool("restricted")
     val premium: Column<Boolean> = bool("premium")
     val registrationTime: Column<LocalDateTime> = datetime("registration_time")
-    val exitTime: Column<LocalDateTime> = datetime("exit_time")
+    val exitTime: Column<LocalDateTime?> = datetime("exit_time").nullable()
 }
