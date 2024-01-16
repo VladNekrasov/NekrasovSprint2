@@ -12,7 +12,7 @@ import org.nekrasov.domain.tabels.status.UserChatStatusTable
 import org.nekrasov.domain.tabels.status.UserStatusTable
 
 object DatabaseFactory {
-    fun init(config: ApplicationConfig) {
+    fun init(config: ApplicationConfig){
         val driverClassName = config.property("storage.driverClassName").getString()
         val jdbcURL = config.property("storage.jdbcURL").getString()
         val user = config.property("storage.user").getString()

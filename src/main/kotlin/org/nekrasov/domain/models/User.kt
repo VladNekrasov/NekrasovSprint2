@@ -1,7 +1,10 @@
 package org.nekrasov.domain.models
 
+import com.typesafe.config.Optional
+import kotlinx.serialization.Serializable
+import org.nekrasov.domain.serializer.LocalDateTimeSerializer
 import java.time.LocalDateTime
-
+@Serializable
 data class User(
     val id: Long,
     val username: String,
@@ -15,6 +18,8 @@ data class User(
     val deleted: Boolean,
     val restricted: Boolean,
     val premium: Boolean,
+    @Serializable(with = LocalDateTimeSerializer::class)
     val registrationTime: LocalDateTime,
+    @Serializable(with = LocalDateTimeSerializer::class)
     val exitTime: LocalDateTime?
 )
