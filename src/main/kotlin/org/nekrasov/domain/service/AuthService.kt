@@ -45,7 +45,7 @@ class AuthService(private val userRepository: UserRepository) {
     }
 
     suspend fun logoutUser(token: String): Boolean {
-        return userRepository.deleteToken(token)
+        return userRepository.updateToken(token)
     }
 
     suspend fun checkToken(token: String): Boolean {

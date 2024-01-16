@@ -1,9 +1,9 @@
 package org.nekrasov.domain.models
 
-import com.typesafe.config.Optional
 import kotlinx.serialization.Serializable
 import org.nekrasov.domain.serializer.LocalDateTimeSerializer
 import java.time.LocalDateTime
+
 @Serializable
 data class User(
     val id: Long,

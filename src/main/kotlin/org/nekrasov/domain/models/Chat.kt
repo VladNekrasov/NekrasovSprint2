@@ -1,7 +1,6 @@
 package org.nekrasov.domain.models
 
 import java.time.LocalDateTime
-
 data class Chat(
     val id: Long,
     val title: String,

@@ -1,12 +1,11 @@
 package org.nekrasov.data.repository
 
-import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.tabels.UserTable
+import java.time.LocalDateTime
 
 
 class UserRepository {
@@ -59,9 +58,14 @@ class UserRepository {
     suspend fun updateToken(id: Long, token: String): Boolean= dbQuery{
         UserTable.update({UserTable.id eq id}){
             it[UserTable.token] = token
+            it[UserTable.online] = true
         } > 0
     }
-    suspend fun deleteToken(token: String): Boolean= dbQuery{
-        UserTable.deleteWhere { UserTable.token eq token} > 0
+    suspend fun updateToken(token: String): Boolean= dbQuery{
+        UserTable.update({UserTable.token eq token}){
+            it[UserTable.token] = null
+            it[UserTable.exitTime] = LocalDateTime.now()
+            it[UserTable.online] = false
+        }> 0
     }
 }

@@ -1,6 +1,7 @@
 package org.nekrasov.domain.models.status
 
-data class MessageStatus (
+// for MessageStatus and UserChatStatus
+data class Status (
     val id: Long,
     val status: String,
 )

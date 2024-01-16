@@ -32,7 +32,7 @@ fun Route.authRoutes(authService: AuthService){
             if (token != null && authService.logoutUser(token))
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             else
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token in the header is empty"))
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token not exist"))
         }
         post("/check-token"){
             val tokenDto = call.receive<TokenDto>()

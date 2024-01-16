@@ -1,14 +1,5 @@
 version: "3.9"
 services:
-  chat-backend:
-    container_name: chat-backend
-    build: .
-    ports:
-      - "8080:8080"
-    networks:
-      - postgres
-    depends_on:
-      - postgres1
   postgres1:
     container_name: postgres1
     image: postgres:16
@@ -48,6 +39,15 @@ services:
           memory: 1G
     networks:
       - postgres
+  chat-backend:
+    container_name: chat-backend
+    build: .
+    ports:
+      - "8080:8080"
+    networks:
+      - postgres
+    depends_on:
+      - postgres1
 volumes:
   proteichatdb-data:
   pgadmin-data:
