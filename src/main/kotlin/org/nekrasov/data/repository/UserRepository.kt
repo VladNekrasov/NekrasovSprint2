@@ -21,6 +21,7 @@ class UserRepository {
         deleted = row[UserTable.deleted],
         restricted = row[UserTable.restricted],
         premium = row[UserTable.premium],
+        password = row[UserTable.password],
         registrationTime = row[UserTable.registrationTime],
         exitTime = row[UserTable.exitTime]
     )
@@ -38,6 +39,7 @@ class UserRepository {
             it[deleted] = user.deleted
             it[restricted] = user.restricted
             it[premium] = user.premium
+            it[password] = user.password
             it[registrationTime] = user.registrationTime
             it[exitTime] = user.exitTime
         }
