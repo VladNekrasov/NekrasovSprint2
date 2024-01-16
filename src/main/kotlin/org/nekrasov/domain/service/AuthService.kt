@@ -24,6 +24,7 @@ class AuthService(private val userRepository: UserRepository) {
                 restricted = false,
                 premium = false,
                 password = hashPassword(createUserDto.password),
+                token = null,
                 registrationTime = LocalDateTime.now(),
                 exitTime = LocalDateTime.now()
             )
@@ -35,11 +36,20 @@ class AuthService(private val userRepository: UserRepository) {
 
     suspend fun loginUser(readUserDto: ReadUserDto): String? {
         val user = userRepository.readByUsername(readUserDto.username)
-        if (user != null) {
-            if (checkPassword(readUserDto.password, user.password)) {
-                return "Token"
-            }
+        if (user != null && checkPassword(readUserDto.password, user.password)){
+            val token = hashPassword(readUserDto.username)
+            userRepository.updateToken(user.id, token)
+            return token
         }
         return null
+    }
+
+    suspend fun logoutUser(token: String): Boolean {
+        return userRepository.deleteToken(token)
+    }
+
+    suspend fun checkToken(token: String): Boolean {
+        val user = userRepository.readByToken(token)
+        return user != null
     }
 }

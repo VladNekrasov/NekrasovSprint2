@@ -7,6 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.nekrasov.domain.dto.request.CreateUserDto
 import org.nekrasov.domain.dto.request.ReadUserDto
+import org.nekrasov.domain.dto.request.TokenDto
 import org.nekrasov.domain.service.AuthService
 
 fun Route.authRoutes(authService: AuthService){
@@ -28,13 +29,17 @@ fun Route.authRoutes(authService: AuthService){
         }
         post("/logout"){
             val token: String? = call.request.headers["X-Auth-Token"]
-            if (token != null)
+            if (token != null && authService.logoutUser(token))
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             else
                 call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token in the header is empty"))
         }
         post("/check-token"){
-            
+            val tokenDto = call.receive<TokenDto>()
+            if (authService.checkToken(tokenDto.token))
+                call.respond(HttpStatusCode.Found, mapOf("status" to "Ok"))
+            else
+                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Invalid X-Auth-Token"))
         }
     }
 }

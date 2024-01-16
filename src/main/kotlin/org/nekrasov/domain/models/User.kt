@@ -17,6 +17,7 @@ data class User(
     val restricted: Boolean,
     val premium: Boolean,
     val password: String,
+    val token: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
     val registrationTime: LocalDateTime,
     @Serializable(with = LocalDateTimeSerializer::class)

@@ -16,6 +16,7 @@ object UserTable : LongIdTable("user") {
     val restricted: Column<Boolean> = bool("restricted")
     val premium: Column<Boolean> = bool("premium")
     val password: Column<String> = varchar("password", 100)
+    val token: Column<String?> = varchar("token", 100).nullable()
     val registrationTime: Column<LocalDateTime> = datetime("registration_time")
     val exitTime: Column<LocalDateTime?> = datetime("exit_time").nullable()
 }

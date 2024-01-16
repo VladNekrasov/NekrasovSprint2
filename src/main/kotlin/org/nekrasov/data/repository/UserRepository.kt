@@ -1,8 +1,9 @@
 package org.nekrasov.data.repository
 
-import org.jetbrains.exposed.sql.ResultRow
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.statements.InsertStatement
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.tabels.UserTable
@@ -21,10 +22,10 @@ class UserRepository {
         restricted = row[UserTable.restricted],
         premium = row[UserTable.premium],
         password = row[UserTable.password],
+        token = row[UserTable.token],
         registrationTime = row[UserTable.registrationTime],
         exitTime = row[UserTable.exitTime]
     )
-
     suspend fun create(user: User): User = dbQuery{
         val id = UserTable.insertAndGetId {
             it[username] = user.username
@@ -37,6 +38,7 @@ class UserRepository {
             it[restricted] = user.restricted
             it[premium] = user.premium
             it[password] = user.password
+            it[token] = user.token
             it[registrationTime] = user.registrationTime
             it[exitTime] = user.exitTime
         }
@@ -47,5 +49,19 @@ class UserRepository {
             .select { UserTable.username eq username }
             .map(::resultRowToUser)
             .singleOrNull()
+    }
+    suspend fun readByToken(token: String): User? = dbQuery {
+        UserTable
+            .select { UserTable.token eq token }
+            .map(::resultRowToUser)
+            .singleOrNull()
+    }
+    suspend fun updateToken(id: Long, token: String): Boolean= dbQuery{
+        UserTable.update({UserTable.id eq id}){
+            it[UserTable.token] = token
+        } > 0
+    }
+    suspend fun deleteToken(token: String): Boolean= dbQuery{
+        UserTable.deleteWhere { UserTable.token eq token} > 0
     }
 }
