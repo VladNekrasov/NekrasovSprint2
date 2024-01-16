@@ -48,6 +48,7 @@ services:
       - postgres
     depends_on:
       - postgres1
+    restart: on-failure
 volumes:
   proteichatdb-data:
   pgadmin-data:
