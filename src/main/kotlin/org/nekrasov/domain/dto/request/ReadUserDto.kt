@@ -4,9 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ReadUserDto(
-    val id: Long,
-    val username: String? = null,
-    val phone: String?  = null,
-    val email: String?  = null,
-    val password: String,
+    val username: String,
+    val password: String
 )

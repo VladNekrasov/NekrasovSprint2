@@ -14,8 +14,6 @@ class UserRepository {
         username = row[UserTable.username],
         firstName = row[UserTable.firstName],
         lastName = row[UserTable.lastName],
-        phone = row[UserTable.phone],
-        email = row[UserTable.email],
         photo = row[UserTable.photo],
         bio = row[UserTable.bio],
         online = row[UserTable.online],
@@ -32,8 +30,6 @@ class UserRepository {
             it[username] = user.username
             it[firstName] = user.firstName
             it[lastName] = user.lastName
-            it[phone] = user.phone
-            it[email] = user.email
             it[photo] = user.photo
             it[bio] = user.bio
             it[online] = user.online
@@ -46,10 +42,9 @@ class UserRepository {
         }
         user.copy(id = id.value)
     }
-
-    suspend fun read(id: Long): User? = dbQuery{
+    suspend fun readByUsername(username: String): User? = dbQuery {
         UserTable
-            .select { UserTable.id eq id }
+            .select { UserTable.username eq username }
             .map(::resultRowToUser)
             .singleOrNull()
     }

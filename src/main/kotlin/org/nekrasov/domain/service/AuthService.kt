@@ -9,33 +9,37 @@ import org.nekrasov.utils.hashPassword
 import java.time.LocalDateTime
 
 class AuthService(private val userRepository: UserRepository) {
-    suspend fun createUser(createUserDto: CreateUserDto) {
-        val user = User(
-            id = 0,
-            username = createUserDto.username,
-            firstName = createUserDto.firstName,
-            lastName = createUserDto.lastName,
-            phone = createUserDto.phone,
-            email = createUserDto.email,
-            photo = "basic_photo_path",
-            bio = null,
-            online = false,
-            deleted = false,
-            restricted = false,
-            premium = false,
-            password = hashPassword(createUserDto.password),
-            registrationTime = LocalDateTime.now(),
-            exitTime = LocalDateTime.now()
-        )
-        userRepository.create(user)
+    suspend fun createUser(createUserDto: CreateUserDto): Boolean {
+        var user = userRepository.readByUsername(createUserDto.username)
+        if (user == null){
+            user = User(
+                id = 0,
+                username = createUserDto.username,
+                firstName = createUserDto.firstName,
+                lastName = createUserDto.lastName,
+                photo = "basic_photo_path",
+                bio = null,
+                online = false,
+                deleted = false,
+                restricted = false,
+                premium = false,
+                password = hashPassword(createUserDto.password),
+                registrationTime = LocalDateTime.now(),
+                exitTime = LocalDateTime.now()
+            )
+            userRepository.create(user)
+            return true
+        }
+        return false
     }
 
-    suspend fun loginUser(readUserDto: ReadUserDto) {
-        val test = userRepository.read(readUserDto.id)
-        if (test != null){
-            if (checkPassword(readUserDto.password, test.password)){
-                val i=10
+    suspend fun loginUser(readUserDto: ReadUserDto): String? {
+        val user = userRepository.readByUsername(readUserDto.username)
+        if (user != null) {
+            if (checkPassword(readUserDto.password, user.password)) {
+                return "Token"
             }
         }
+        return null
     }
 }

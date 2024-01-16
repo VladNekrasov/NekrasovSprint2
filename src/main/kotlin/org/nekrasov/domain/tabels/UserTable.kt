@@ -9,8 +9,6 @@ object UserTable : LongIdTable("user") {
     val username: Column<String> = varchar("username", 50).uniqueIndex()
     val firstName: Column<String> = varchar("first_name",50)
     val lastName: Column<String> = varchar("last_name",50)
-    val phone: Column<String> = varchar("phone", 20).uniqueIndex()
-    val email: Column<String> = varchar("email", 255).uniqueIndex()
     val photo: Column<String> = varchar("photo", 100)
     val bio: Column<String?> = varchar("bio", 200).nullable()
     val online: Column<Boolean> = bool("online")

@@ -13,24 +13,28 @@ fun Route.authRoutes(authService: AuthService){
     route("/api/auth") {
         post("/reg"){
             val createUserDto = call.receive<CreateUserDto>()
-            authService.createUser(createUserDto)
-            call.respond(HttpStatusCode.Created)
+            if (authService.createUser(createUserDto))
+                call.respond(HttpStatusCode.Created, mapOf("status" to "Ok"))
+            else
+                call.respond(HttpStatusCode.UnprocessableEntity, mapOf("status" to "Duplicate username"))
         }
         post("/login"){
             val readUserDto = call.receive<ReadUserDto>()
-            if (readUserDto.username!=null || readUserDto.email!=null || readUserDto.phone!=null){
-                authService.loginUser(readUserDto)
-                call.respond(HttpStatusCode.Created)
-            }
-            else{
-                call.respond(HttpStatusCode.BadRequest)
-            }
+            val token = authService.loginUser(readUserDto)
+            if (token != null)
+                call.respond(HttpStatusCode.Found, mapOf("token" to token, "status" to "Ok"))
+            else
+                call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not registered, please check your username and password"))
         }
         post("/logout"){
-            TODO()
+            val token: String? = call.request.headers["X-Auth-Token"]
+            if (token != null)
+                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
+            else
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token in the header is empty"))
         }
         post("/check-token"){
-            TODO()
+            
         }
     }
 }
