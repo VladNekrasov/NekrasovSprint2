@@ -14,7 +14,7 @@ data class User(
     val email: String,
     val photo: String,
     val bio: String?,
-    val statusId: Int,
+    val online: Boolean,
     val deleted: Boolean,
     val restricted: Boolean,
     val premium: Boolean,

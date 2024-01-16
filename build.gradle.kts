@@ -38,6 +38,8 @@ dependencies {
 
     implementation("org.postgresql:postgresql:$postgresqlVersion")
 
+    implementation("org.mindrot:jbcrypt:0.4")
+
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
     testImplementation(kotlin("test"))

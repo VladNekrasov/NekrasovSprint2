@@ -9,7 +9,6 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.nekrasov.domain.tabels.*
 import org.nekrasov.domain.tabels.status.MessageStatusTable
 import org.nekrasov.domain.tabels.status.UserChatStatusTable
-import org.nekrasov.domain.tabels.status.UserStatusTable
 
 object DatabaseFactory {
     fun init(config: ApplicationConfig){
@@ -27,7 +26,6 @@ object DatabaseFactory {
             SchemaUtils.create(
                 MessageStatusTable,
                 UserChatStatusTable,
-                UserStatusTable,
                 ChatTable,
                 ForwardMessageTable,
                 MessageTable,

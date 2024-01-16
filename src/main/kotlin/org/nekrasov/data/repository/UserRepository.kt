@@ -2,6 +2,7 @@ package org.nekrasov.data.repository
 
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.tabels.UserTable
@@ -17,7 +18,7 @@ class UserRepository {
         email = row[UserTable.email],
         photo = row[UserTable.photo],
         bio = row[UserTable.bio],
-        statusId = row[UserTable.statusId],
+        online = row[UserTable.online],
         deleted = row[UserTable.deleted],
         restricted = row[UserTable.restricted],
         premium = row[UserTable.premium],
@@ -35,7 +36,7 @@ class UserRepository {
             it[email] = user.email
             it[photo] = user.photo
             it[bio] = user.bio
-            it[statusId] = user.statusId
+            it[online] = user.online
             it[deleted] = user.deleted
             it[restricted] = user.restricted
             it[premium] = user.premium
@@ -44,5 +45,12 @@ class UserRepository {
             it[exitTime] = user.exitTime
         }
         user.copy(id = id.value)
+    }
+
+    suspend fun read(id: Long): User? = dbQuery{
+        UserTable
+            .select { UserTable.id eq id }
+            .map(::resultRowToUser)
+            .singleOrNull()
     }
 }

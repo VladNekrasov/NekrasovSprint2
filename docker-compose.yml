@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     networks:
       - postgres
+    depends_on:
+      - postgres1
   postgres1:
     container_name: postgres1
     image: postgres:16
