@@ -9,7 +9,6 @@ services:
       POSTGRES_PASSWORD: "1234"
       PGDATA: "/var/lib/postgresql/data/pgdata"
     volumes:
-      - ../Init Database:/docker-entrypoint-initdb.d
       - proteichatdb-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
@@ -19,11 +18,17 @@ services:
         limits:
           cpus: '1'
           memory: 4G
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U proteiuser -d proteichatdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - postgres
   pgadmin:
     container_name: pgadmin
-    image: dpage/pgadmin4:7.3
+    image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@protei.com
       PGADMIN_DEFAULT_PASSWORD: "1234"
@@ -47,8 +52,9 @@ services:
     networks:
       - postgres
     depends_on:
-      - postgres1
-    restart: on-failure
+      postgres1:
+        condition: service_healthy
+    restart: unless-stopped
 volumes:
   proteichatdb-data:
   pgadmin-data:
