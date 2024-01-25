@@ -1,7 +1,8 @@
 package org.nekrasov.data.repository
 
 import org.jetbrains.exposed.sql.*
-import org.nekrasov.data.DatabaseFactory
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.tabels.ChatTable
 
@@ -9,20 +10,39 @@ class ChatRepository {
     private fun resultRowToChat(row: ResultRow) = Chat(
         id = row[ChatTable.id].value,
         title = row[ChatTable.title],
-        photo = row[ChatTable.photo],
         creatorId = row[ChatTable.creatorId],
         creationTime = row[ChatTable.creationTime],
-        deleted = row[ChatTable.deleted]
     )
 
-    suspend fun create(chat: Chat): Chat = DatabaseFactory.dbQuery {
+    suspend fun create(chat: Chat): Chat = dbQuery {
         val id = ChatTable.insertAndGetId {
             it[title] = chat.title
-            it[photo] = chat.photo
             it[creatorId] = chat.creatorId
             it[creationTime] = chat.creationTime
-            it[deleted] = chat.deleted
         }
         chat.copy(id = id.value)
+    }
+
+    suspend fun read(id: Long): Chat? = dbQuery {
+        ChatTable
+            .select { ChatTable.id eq id }
+            .map(::resultRowToChat)
+            .singleOrNull()
+    }
+
+    suspend fun update(chat: Chat):Boolean = dbQuery {
+        ChatTable.update({ ChatTable.id eq chat.id }) {
+            it[title] = chat.title
+            it[creatorId] = chat.creatorId
+            it[creationTime] = chat.creationTime
+        } > 0
+    }
+
+    suspend fun delete(id: Long): Boolean = dbQuery {
+        ChatTable.deleteWhere { ChatTable.id eq id } >0
+    }
+
+    suspend fun allChats(): List<Chat> = dbQuery {
+        ChatTable.selectAll().map(::resultRowToChat)
     }
 }

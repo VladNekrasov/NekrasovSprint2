@@ -40,6 +40,8 @@ dependencies {
 
     implementation("org.mindrot:jbcrypt:0.4")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.0")
+
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
     testImplementation(kotlin("test"))

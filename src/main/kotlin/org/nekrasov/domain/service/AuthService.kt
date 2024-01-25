@@ -11,44 +11,40 @@ import java.time.LocalDateTime
 class AuthService(private val userRepository: UserRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): Boolean {
         var user = userRepository.readByUsername(createUserDto.username)
-        if (user == null){
-            user = User(
-                id = 0,
-                username = createUserDto.username,
-                firstName = createUserDto.firstName,
-                lastName = createUserDto.lastName,
-                photo = "basic_photo_path",
-                bio = null,
-                online = false,
-                deleted = false,
-                restricted = false,
-                premium = false,
-                password = hashPassword(createUserDto.password),
-                token = null,
-                registrationTime = LocalDateTime.now(),
-                exitTime = LocalDateTime.now()
-            )
-            userRepository.create(user)
-            return true
+        if (user != null) {
+            return false
         }
-        return false
+        user = User(
+            username = createUserDto.username,
+            firstName = createUserDto.firstName,
+            lastName = createUserDto.lastName,
+            password = hashPassword(createUserDto.password),
+            token = null,
+            registrationTime = LocalDateTime.now(),
+        )
+        userRepository.create(user)
+        return true
     }
 
     suspend fun loginUser(readUserDto: ReadUserDto): String? {
         val user = userRepository.readByUsername(readUserDto.username)
-        if (user != null && checkPassword(readUserDto.password, user.password)){
-            val token = hashPassword(readUserDto.username)
-            userRepository.updateToken(user.id, token)
-            return token
+        if (user == null || !checkPassword(readUserDto.password, user.password)){
+            return null
         }
-        return null
+        val token = hashPassword(readUserDto.username)
+        userRepository.updateToken(user.id, token)
+        return token
     }
 
-    suspend fun logoutUser(token: String): Boolean {
-        return userRepository.updateToken(token)
+    suspend fun logoutUser(token: String?): Boolean {
+        if (token == null)
+            return false
+        return userRepository.deleteToken(token)
     }
 
-    suspend fun checkToken(token: String): Boolean {
+    suspend fun checkToken(token: String?): Boolean {
+        if (token == null)
+            return false
         val user = userRepository.readByToken(token)
         return user != null
     }

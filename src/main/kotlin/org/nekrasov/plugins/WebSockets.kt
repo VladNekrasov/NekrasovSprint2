@@ -1,7 +1,9 @@
 package org.nekrasov.plugins
 
+import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
 import io.ktor.server.websocket.*
+import kotlinx.serialization.json.Json
 import java.time.Duration
 
 fun Application.configureWebSockets() {
@@ -10,5 +12,6 @@ fun Application.configureWebSockets() {
         timeout = Duration.ofSeconds(15)
         maxFrameSize = Long.MAX_VALUE
         masking = false
+        contentConverter = KotlinxWebsocketSerializationConverter(Json)
     }
 }

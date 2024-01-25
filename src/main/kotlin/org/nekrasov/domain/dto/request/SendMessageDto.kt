@@ -1,15 +1,13 @@
-package org.nekrasov.domain.models
+package org.nekrasov.domain.dto.request
 
 import kotlinx.serialization.Serializable
 import org.nekrasov.domain.serializer.LocalDateTimeSerializer
 import java.time.LocalDateTime
 
 @Serializable
-data class Message(
-    val id: Long = 0,
-    val text: String?,
-    val chat: Long,
-    val fromId: Long,
+data class SendMessageDto(
+    val id: Long,
+    val text: String,
     @Serializable(with = LocalDateTimeSerializer::class)
     val createTime: LocalDateTime
 )

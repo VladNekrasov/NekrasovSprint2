@@ -25,11 +25,11 @@ fun Route.authRoutes(authService: AuthService){
             if (token != null)
                 call.respond(HttpStatusCode.Found, mapOf("token" to token, "status" to "Ok"))
             else
-                call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not registered, please check your username and password"))
+                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Users not found"))
         }
         post("/logout"){
             val token: String? = call.request.headers["X-Auth-Token"]
-            if (token != null && authService.logoutUser(token))
+            if (authService.logoutUser(token))
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             else
                 call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token not exist"))

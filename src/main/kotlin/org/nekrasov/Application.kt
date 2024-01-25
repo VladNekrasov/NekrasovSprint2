@@ -1,11 +1,14 @@
 package org.nekrasov
 
 import io.ktor.server.application.*
+import io.ktor.server.websocket.*
 import org.nekrasov.data.DatabaseFactory
 import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.ChatService
+import org.nekrasov.domain.service.UserService
+import org.nekrasov.domain.service.WebSocketService
 import org.nekrasov.plugins.configureAuth
 import org.nekrasov.plugins.configureSerialization
 import org.nekrasov.plugins.configureWebSockets
@@ -20,12 +23,16 @@ fun Application.module() {
     val chatRepository = ChatRepository()
     val authService = AuthService(userRepository)
     val chatService = ChatService(chatRepository)
+    val userService = UserService(userRepository)
+    val webSocketService = WebSocketService()
     DatabaseFactory.init(environment.config)
     configureSerialization()
     configureAuth()
     configureWebSockets()
     configureRoutes(
         authService = authService,
-        chatService = chatService
+        chatService = chatService,
+        userService = userService,
+        webSocketService = webSocketService
     )
 }

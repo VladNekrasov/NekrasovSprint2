@@ -7,8 +7,6 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.nekrasov.domain.tabels.*
-import org.nekrasov.domain.tabels.status.MessageStatusTable
-import org.nekrasov.domain.tabels.status.UserChatStatusTable
 
 object DatabaseFactory {
     fun init(config: ApplicationConfig){
@@ -24,12 +22,8 @@ object DatabaseFactory {
         )
         transaction(database) {
             SchemaUtils.create(
-                MessageStatusTable,
-                UserChatStatusTable,
                 ChatTable,
-                ForwardMessageTable,
                 MessageTable,
-                MessageUserStatusTable,
                 UserChatTable,
                 UserTable
             )
