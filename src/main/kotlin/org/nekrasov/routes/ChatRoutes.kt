@@ -44,11 +44,11 @@ fun Route.chatRoutes(authService: AuthService, chatService: ChatService, webSock
         }
 
         val token = call.request.headers["X-Auth-Token"]
-
         if (!authService.checkToken(token)){
             close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not authorized"))
             return@webSocket
         }
+
         try {
             val room = webSocketService.onConnect(idChat, this)
             incoming.consumeEach { frame ->

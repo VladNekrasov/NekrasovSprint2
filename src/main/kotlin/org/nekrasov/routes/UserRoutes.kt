@@ -2,48 +2,98 @@ package org.nekrasov.routes
 
 import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.server.util.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
-import org.nekrasov.domain.dto.request.CreateChatDto
+import org.nekrasov.domain.dto.request.UpdateUserDto
+import org.nekrasov.domain.dto.response.userToUserDto
+import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.UserService
 
-fun Route.userRoutes(userService: UserService){
+fun Route.userRoutes(authService: AuthService,
+                     userService: UserService
+){
     route("/users") {
-        get("/all"){
-            val userList = userService.getAllUsers()
-            if (userList.isEmpty())
-                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Users not found"))
-            else
-                call.respond(HttpStatusCode.Found, userList)
-        }
         get{
-            val id:Long? = call.request.queryParameters["id"]?.toLongOrNull()
-            if (id == null)
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Invalid parameter for id"))
-            else {
-                val user = userService.getUser(id)
-                if (user == null)
-                    call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
-                else
-                    call.respond(HttpStatusCode.Found, user)
+            val token = call.request.headers["X-Auth-Token"]
+            if (!authService.checkToken(token)){
+                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
+                return@get
             }
 
-//            try {
-//                val id = call.parameters.getOrFail<Long>("id").toLong()
-//                val user = userService.getUser(id)
-//                if (user == null)
-//                    call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
-//                call.respond(HttpStatusCode.Found, user!!)
-//            } catch (e: MissingRequestParameterException) {
-//                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Missing parameter for id"))
-//            } catch (e: ParameterConversionException) {
-//                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "id requires Long"))
-//            }
+            val id = call.parameters["id"] ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id not specified in query"))
+                return@get
+            }
+
+            val idUser = id.toLongOrNull() ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id requires the Long type"))
+                return@get
+            }
+
+            userService.getUser(idUser)?.let{
+                call.respond(HttpStatusCode.Found, userToUserDto(it))
+            } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
         }
+
+        patch{
+            val token = call.request.headers["X-Auth-Token"]
+            if (!authService.checkToken(token)){
+                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
+                return@patch
+            }
+
+            val updateUserDto = call.receive<UpdateUserDto>()
+
+            if (authService.checkUser(updateUserDto.id, token!!) && userService.updateUser(updateUserDto)){
+                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
+            } else {
+                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Refusal to edit user"))
+            }
+        }
+
+        delete {
+            val token = call.request.headers["X-Auth-Token"]
+            if (!authService.checkToken(token)){
+                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
+                return@delete
+            }
+
+            val id = call.parameters["id"] ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id not specified in query"))
+                return@delete
+            }
+
+            val idUser = id.toLongOrNull() ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id requires the Long type"))
+                return@delete
+            }
+
+            if (authService.checkUser(idUser, token!!) && userService.deleteUser(idUser)){
+                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
+            } else {
+                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Refusal to delete user"))
+            }
+
+
+
+
+        }
+
+        get("/all"){
+            val token = call.request.headers["X-Auth-Token"]
+            if (!authService.checkToken(token)){
+                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
+                return@get
+            }
+
+            val userList = userService.getAllUsers()
+            if (userList.isEmpty()){
+                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Users not found"))
+            } else {
+                call.respond(HttpStatusCode.Found, userList.map(::userToUserDto))
+            }
+        }
+
     }
 }

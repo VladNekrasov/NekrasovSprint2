@@ -8,15 +8,10 @@ class WebSocketService() {
     private val connections = ConcurrentHashMap<Long, MutableList<DefaultWebSocketServerSession>>()
 
     fun onConnect(id: Long, currentSession: DefaultWebSocketServerSession): MutableList<DefaultWebSocketServerSession> {
-        val room =connections[id]?.let{
-            it.add(currentSession)
-            it
+        val room = connections[id]?.apply {
+            add(currentSession)
         } ?: mutableListOf(currentSession)
         connections[id]=room
-//        if (connections[id] == null)
-//            connections[id] = mutableListOf<DefaultWebSocketServerSession>(currentSession)
-//        else
-//            connections[id]!!.add(currentSession)
         return room
     }
 

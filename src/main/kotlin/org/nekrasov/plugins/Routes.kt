@@ -18,6 +18,6 @@ fun Application.configureRoutes(authService: AuthService, chatService: ChatServi
         }
         authRoutes(authService)
         chatRoutes(authService, chatService, webSocketService)
-        userRoutes(userService)
+        userRoutes(authService, userService)
     }
 }

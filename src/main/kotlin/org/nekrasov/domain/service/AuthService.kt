@@ -48,4 +48,13 @@ class AuthService(private val userRepository: UserRepository) {
         val user = userRepository.readByToken(token)
         return user != null
     }
+
+    suspend fun checkUser(idConsumer: Long, token: String): Boolean {
+        val userConsumer = userRepository.read(idConsumer)
+        val produceConsumer = userRepository.readByToken(token)
+        return if (userConsumer == null || produceConsumer == null)
+            false
+        else
+            userConsumer == produceConsumer
+    }
 }
