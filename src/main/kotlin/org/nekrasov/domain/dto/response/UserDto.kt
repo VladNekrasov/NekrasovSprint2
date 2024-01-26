@@ -12,7 +12,8 @@ data class UserDto(
     val firstName: String,
     val lastName: String,
     @Serializable(with = LocalDateTimeSerializer::class)
-    val registrationTime: LocalDateTime
+    val registrationTime: LocalDateTime,
+    val deleted: Boolean
 )
 
 fun userToUserDto(user: User) = UserDto(
@@ -20,5 +21,6 @@ fun userToUserDto(user: User) = UserDto(
     username = user.username,
     firstName = user.firstName,
     lastName = user.lastName,
-    registrationTime = user.registrationTime
+    registrationTime = user.registrationTime,
+    deleted = user.deleted
 )

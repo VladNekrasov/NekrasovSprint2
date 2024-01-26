@@ -12,7 +12,8 @@ class MessageRepository{
         text = row[MessageTable.text],
         chat = row[MessageTable.chatId],
         fromId = row[MessageTable.fromId],
-        createTime = row[MessageTable.createTime]
+        createTime = row[MessageTable.createTime],
+        deleted = row[MessageTable.deleted]
     )
 
     suspend fun create(message: Message): Message = dbQuery {
@@ -21,6 +22,7 @@ class MessageRepository{
             it[MessageTable.chatId] = message.chat
             it[MessageTable.fromId] = message.fromId
             it[MessageTable.createTime] = message.createTime
+            it[MessageTable.deleted] = message.deleted
         }
         message.copy(id = id.value)
     }
@@ -38,11 +40,15 @@ class MessageRepository{
             it[MessageTable.chatId] = message.chat
             it[MessageTable.fromId] = message.fromId
             it[MessageTable.createTime] = message.createTime
+            it[MessageTable.deleted] = message.deleted
         } > 0
     }
 
     suspend fun delete(id: Long): Boolean = dbQuery {
         MessageTable.deleteWhere { MessageTable.id eq id } > 0
+        MessageTable.update({ MessageTable.id eq id }) {
+            it[deleted] = true
+        } > 0
     }
 
     suspend fun allMessages(): List<Message> = dbQuery {

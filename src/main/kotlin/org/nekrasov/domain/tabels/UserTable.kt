@@ -12,4 +12,5 @@ object UserTable : LongIdTable("user") {
     val password: Column<String> = varchar("password", 100)
     val token: Column<String?> = varchar("token", 100).nullable()
     val registrationTime: Column<LocalDateTime> = datetime("registration_time")
+    val deleted: Column<Boolean> = bool("deleted")
 }

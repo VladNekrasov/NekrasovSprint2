@@ -10,4 +10,5 @@ object ChatTable : LongIdTable("chat") {
     val title: Column<String> = varchar("title", 100)
     val creatorId: Column<Long> = long("creator_id").references(UserTable.id, onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
     val creationTime: Column<LocalDateTime> = datetime("creation_time")
+    val deleted: Column<Boolean> = bool("deleted")
 }

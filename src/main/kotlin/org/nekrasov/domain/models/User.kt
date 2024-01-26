@@ -13,5 +13,6 @@ data class User(
     val password: String,
     val token: String?,
     @Serializable(with = LocalDateTimeSerializer::class)
-    val registrationTime: LocalDateTime
+    val registrationTime: LocalDateTime,
+    val deleted: Boolean
 )

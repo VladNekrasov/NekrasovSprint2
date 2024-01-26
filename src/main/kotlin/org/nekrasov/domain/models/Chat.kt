@@ -10,5 +10,6 @@ data class Chat(
     val title: String,
     val creatorId: Long,
     @Serializable(with = LocalDateTimeSerializer::class)
-    val creationTime: LocalDateTime
+    val creationTime: LocalDateTime,
+    val deleted: Boolean
 )

@@ -16,6 +16,7 @@ class UserRepository {
         password = row[UserTable.password],
         token = row[UserTable.token],
         registrationTime = row[UserTable.registrationTime],
+        deleted = row[UserTable.deleted]
     )
 
     suspend fun create(user: User): User = dbQuery{
@@ -26,6 +27,7 @@ class UserRepository {
             it[password] = user.password
             it[token] = user.token
             it[registrationTime] = user.registrationTime
+            it[deleted] = user.deleted
         }
         user.copy(id = id.value)
     }
@@ -59,6 +61,7 @@ class UserRepository {
             it[password] = user.password
             it[token] = user.token
             it[registrationTime] = user.registrationTime
+            it[deleted] = user.deleted
         } > 0
     }
 
@@ -69,7 +72,10 @@ class UserRepository {
     }
 
     suspend fun delete(id: Long): Boolean = dbQuery {
-        UserTable.deleteWhere { UserTable.id eq id} > 0
+        UserTable.update({UserTable.id eq id}){
+            it[deleted] = true
+            it[token] = null
+        } > 0
     }
 
     suspend fun deleteToken(token: String): Boolean = dbQuery{

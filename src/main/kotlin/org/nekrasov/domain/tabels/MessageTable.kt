@@ -11,4 +11,5 @@ object MessageTable : LongIdTable("message") {
     val text: Column<String?> = varchar("text", 400).nullable()
     val fromId: Column<Long> = long("from_id").references(UserTable.id,  onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
     val createTime: Column<LocalDateTime> = datetime("create_time")
+    val deleted: Column<Boolean> = bool("deleted")
 }

@@ -12,6 +12,7 @@ class ChatRepository {
         title = row[ChatTable.title],
         creatorId = row[ChatTable.creatorId],
         creationTime = row[ChatTable.creationTime],
+        deleted = row[ChatTable.deleted]
     )
 
     suspend fun create(chat: Chat): Chat = dbQuery {
@@ -19,6 +20,7 @@ class ChatRepository {
             it[title] = chat.title
             it[creatorId] = chat.creatorId
             it[creationTime] = chat.creationTime
+            it[deleted] = chat.deleted
         }
         chat.copy(id = id.value)
     }
@@ -35,11 +37,14 @@ class ChatRepository {
             it[title] = chat.title
             it[creatorId] = chat.creatorId
             it[creationTime] = chat.creationTime
+            it[deleted] = chat.deleted
         } > 0
     }
 
     suspend fun delete(id: Long): Boolean = dbQuery {
-        ChatTable.deleteWhere { ChatTable.id eq id } >0
+        ChatTable.update({ ChatTable.id eq id }) {
+            it[deleted] = true
+        } > 0
     }
 
     suspend fun allChats(): List<Chat> = dbQuery {

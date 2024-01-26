@@ -11,5 +11,6 @@ data class Message(
     val chat: Long,
     val fromId: Long,
     @Serializable(with = LocalDateTimeSerializer::class)
-    val createTime: LocalDateTime
+    val createTime: LocalDateTime,
+    val deleted: Boolean
 )

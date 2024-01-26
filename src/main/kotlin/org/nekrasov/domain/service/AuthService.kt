@@ -21,6 +21,7 @@ class AuthService(private val userRepository: UserRepository) {
             password = hashPassword(createUserDto.password),
             token = null,
             registrationTime = LocalDateTime.now(),
+            deleted = false
         )
         userRepository.create(user)
         return true

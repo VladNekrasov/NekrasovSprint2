@@ -16,7 +16,8 @@ class UserService(private val userRepository: UserRepository) {
 
     suspend fun updateUser(updateUserDto: UpdateUserDto): Boolean {
         return userRepository.read(updateUserDto.id)?.let {
-            if (userRepository.readByUsername(updateUserDto.username) == null){
+            val userFind = userRepository.readByUsername(updateUserDto.username)
+            if (userFind == null || it.username == updateUserDto.username){
                 val user = User(
                     id = updateUserDto.id,
                     username = updateUserDto.username,
@@ -24,7 +25,8 @@ class UserService(private val userRepository: UserRepository) {
                     lastName = updateUserDto.lastName,
                     password = it.password,
                     token = it.token,
-                    registrationTime = it.registrationTime
+                    registrationTime = it.registrationTime,
+                    deleted = it.deleted
                 )
                 userRepository.update(user)
             } else
