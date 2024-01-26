@@ -10,21 +10,21 @@ import java.time.LocalDateTime
 
 class AuthService(private val userRepository: UserRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): Boolean {
-        var user = userRepository.readByUsername(createUserDto.username)
-        if (user != null) {
-            return false
+        return if (userRepository.readByUsername(createUserDto.username) == null) {
+            val user = User(
+                username = createUserDto.username,
+                firstName = createUserDto.firstName,
+                lastName = createUserDto.lastName,
+                password = hashPassword(createUserDto.password),
+                token = null,
+                registrationTime = LocalDateTime.now(),
+                deleted = false
+            )
+            userRepository.create(user)
+            true
+        } else {
+            false
         }
-        user = User(
-            username = createUserDto.username,
-            firstName = createUserDto.firstName,
-            lastName = createUserDto.lastName,
-            password = hashPassword(createUserDto.password),
-            token = null,
-            registrationTime = LocalDateTime.now(),
-            deleted = false
-        )
-        userRepository.create(user)
-        return true
     }
 
     suspend fun loginUser(readUserDto: ReadUserDto): String? {
