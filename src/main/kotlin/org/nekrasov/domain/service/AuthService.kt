@@ -1,5 +1,6 @@
 package org.nekrasov.domain.service
 
+import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateUserDto
 import org.nekrasov.domain.dto.request.ReadUserDto
@@ -8,7 +9,7 @@ import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
 import java.time.LocalDateTime
 
-class AuthService(private val userRepository: UserRepository) {
+class AuthService(private val userRepository: UserRepository, private val chatRepository: ChatRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): Boolean {
         return if (userRepository.readByUsername(createUserDto.username) == null) {
             val user = User(
@@ -57,5 +58,14 @@ class AuthService(private val userRepository: UserRepository) {
             false
         else
             userConsumer == produceConsumer
+    }
+
+    suspend fun checkChat(idConsumer: Long, token: String): Boolean {
+        val userConsumer = chatRepository.read(idConsumer)
+        val produceConsumer = userRepository.readByToken(token)
+        return if (userConsumer == null || produceConsumer == null)
+            false
+        else
+            userConsumer.creatorId == produceConsumer.id
     }
 }

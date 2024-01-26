@@ -36,6 +36,25 @@ fun Route.userRoutes(authService: AuthService,
             } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
         }
 
+        get("chats"){
+            val token = call.request.headers["X-Auth-Token"]
+            if (!authService.checkToken(token)){
+                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
+                return@get
+            }
+
+            val id = call.parameters["id"] ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id not specified in query"))
+                return@get
+            }
+
+            val idUser = id.toLongOrNull() ?: run{
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id requires the Long type"))
+                return@get
+            }
+            call.respond(HttpStatusCode.OK, userService.getUserChats(idUser))
+        }
+
         patch{
             val token = call.request.headers["X-Auth-Token"]
             if (!authService.checkToken(token)){
@@ -74,10 +93,6 @@ fun Route.userRoutes(authService: AuthService,
             } else {
                 call.respond(HttpStatusCode.Conflict, mapOf("status" to "Refusal to delete user"))
             }
-
-
-
-
         }
 
         get("/all"){

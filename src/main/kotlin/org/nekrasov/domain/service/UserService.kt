@@ -1,11 +1,16 @@
 package org.nekrasov.domain.service
 
+import org.nekrasov.data.repository.ChatRepository
+import org.nekrasov.data.repository.UserChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.UpdateUserDto
+import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.models.User
 
-class UserService(private val userRepository: UserRepository) {
-
+class UserService(private val userRepository: UserRepository,
+                  private val chatRepository: ChatRepository,
+                  private val userChatRepository: UserChatRepository
+) {
     suspend fun getAllUsers(): List<User> {
         return userRepository.allUsers()
     }
@@ -35,6 +40,18 @@ class UserService(private val userRepository: UserRepository) {
     }
 
     suspend fun deleteUser(id: Long): Boolean {
+        userChatRepository.deleteUser(id)
         return userRepository.delete(id)
+    }
+
+    suspend fun getUserChats(idUser: Long): List<Chat>{
+        val chats = mutableListOf<Chat>()
+        val chatsId = userChatRepository.getChatsId(idUser)
+        chatsId.forEach{
+            chatRepository.read(it)?.let {chat ->
+                chats.add(chat)
+            }
+        }
+        return chats
     }
 }
