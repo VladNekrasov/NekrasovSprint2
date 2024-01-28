@@ -4,8 +4,9 @@ import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateChatDto
+import org.nekrasov.domain.dto.request.JoinLeaveChatDto
+import org.nekrasov.domain.dto.request.ReadChatDto
 import org.nekrasov.domain.dto.request.UpdateChatDto
-import org.nekrasov.domain.dto.request.UpdateUserDto
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.models.UserChat
@@ -41,8 +42,15 @@ class ChatService(private val chatRepository: ChatRepository,
         return chatRepository.allChats()
     }
 
-    suspend fun getChat(id: Long): Chat? {
-        return chatRepository.read(id)
+    suspend fun getChat(readChatDto: ReadChatDto): Chat? {
+        return userRepository.read(readChatDto.userId)?.let {
+            chatRepository.read(readChatDto.chatId)?.let { it2->
+               if (userChatRepository.getUsersId(it2.id).contains(it.id))
+                   chatRepository.read(it2.id)
+               else
+                   null
+            }
+        }
     }
 
     suspend fun updateChat(updateChatDto: UpdateChatDto): Boolean {
@@ -63,20 +71,27 @@ class ChatService(private val chatRepository: ChatRepository,
         return chatRepository.delete(id)
     }
 
-    suspend fun joinChat(idChat: Long, token: String): Boolean{
-        return userRepository.readByToken(token)?.let {
-            val userChat = UserChat(
+    suspend fun joinChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
+        return userRepository.read(joinLeaveChatDto.userId)?.let {
+            chatRepository.read(joinLeaveChatDto.chatId)?.let {it2 ->
+                val userChat = UserChat(
                 userId = it.id,
-                chatId = idChat,
+                chatId = it2.id,
                 entryTime = LocalDateTime.now()
             )
             userChatRepository.create(userChat)
+            } ?: false
         } ?: false
     }
 
-    suspend fun leaveChat(idChat: Long, token: String): Boolean{
-        return userRepository.readByToken(token)?.let {
-            userChatRepository.delete(it.id, idChat)
+    suspend fun leaveChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
+        return userRepository.read(joinLeaveChatDto.userId)?.let {
+            chatRepository.read(joinLeaveChatDto.chatId)?.let {it2 ->
+                if (it2.creatorId != it.id)
+                    userChatRepository.delete(it.id, it2.id)
+                else
+                    false
+            } ?: false
         } ?: false
     }
 

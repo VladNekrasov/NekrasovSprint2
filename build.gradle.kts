@@ -3,6 +3,8 @@ val kotlinVersion: String by project
 val logbackVersion: String by project
 val exposedVersion: String by project
 val postgresqlVersion: String by project
+val jbcryptVersion: String by project
+val kotlinxdatetimeVersion: String by project
 
 plugins {
     kotlin("jvm") version "1.9.21"
@@ -38,9 +40,13 @@ dependencies {
 
     implementation("org.postgresql:postgresql:$postgresqlVersion")
 
-    implementation("org.mindrot:jbcrypt:0.4")
+    implementation("org.mindrot:jbcrypt:$jbcryptVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:$kotlinxdatetimeVersion")
+
+    implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
+
+    implementation("io.ktor:ktor-server-request-validation:$ktorVersion")
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
