@@ -1,5 +1,6 @@
 package org.nekrasov.domain.service
 
+import kotlinx.datetime.Clock
 import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserChatRepository
 import org.nekrasov.data.repository.UserRepository
@@ -10,7 +11,6 @@ import org.nekrasov.domain.dto.request.UpdateChatDto
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.models.UserChat
-import java.time.LocalDateTime
 
 class ChatService(private val chatRepository: ChatRepository,
                   private val userRepository: UserRepository,
@@ -22,7 +22,7 @@ class ChatService(private val chatRepository: ChatRepository,
                 id = 0,
                 title = createChatDto.title,
                 creatorId = createChatDto.creatorId,
-                creationTime = LocalDateTime.now(),
+                creationTime = Clock.System.now(),
                 deleted = false
             )
             val chatId = chatRepository.create(chat).id
@@ -77,7 +77,7 @@ class ChatService(private val chatRepository: ChatRepository,
                 val userChat = UserChat(
                 userId = it.id,
                 chatId = it2.id,
-                entryTime = LocalDateTime.now()
+                entryTime = Clock.System.now()
             )
             userChatRepository.create(userChat)
             } ?: false

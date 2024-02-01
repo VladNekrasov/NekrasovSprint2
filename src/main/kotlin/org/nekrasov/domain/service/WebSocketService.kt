@@ -5,7 +5,6 @@ import io.ktor.websocket.*
 import kotlinx.serialization.json.Json
 import org.nekrasov.data.repository.MessageRepository
 import org.nekrasov.domain.dto.request.SendMessageDto
-import org.nekrasov.domain.dto.response.ResponseMessageDto
 import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketService(private val messageRepository: MessageRepository) {

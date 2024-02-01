@@ -1,9 +1,8 @@
 package org.nekrasov.domain.dto.response
 
+import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import org.nekrasov.domain.models.User
-import org.nekrasov.domain.serializer.LocalDateTimeSerializer
-import java.time.LocalDateTime
 
 @Serializable
 data class UserDto(
@@ -11,8 +10,7 @@ data class UserDto(
     val username: String,
     val firstName: String,
     val lastName: String,
-    @Serializable(with = LocalDateTimeSerializer::class)
-    val registrationTime: LocalDateTime,
+    val registrationTime: Instant,
     val deleted: Boolean
 )
 

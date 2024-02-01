@@ -2,8 +2,8 @@ package org.nekrasov.domain.tabels
 
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.Column
-import org.jetbrains.exposed.sql.javatime.datetime
-import java.time.LocalDateTime
+import org.jetbrains.exposed.sql.javatime.timestamp
+import java.time.Instant
 
 object UserTable : LongIdTable("user") {
     val username: Column<String> = varchar("username", 50).uniqueIndex()
@@ -11,6 +11,6 @@ object UserTable : LongIdTable("user") {
     val lastName: Column<String> = varchar("last_name",50)
     val password: Column<String> = varchar("password", 100)
     val token: Column<String?> = varchar("token", 100).nullable()
-    val registrationTime: Column<LocalDateTime> = datetime("registration_time")
+    val registrationTime: Column<Instant> = timestamp("registration_time")
     val deleted: Column<Boolean> = bool("deleted")
 }

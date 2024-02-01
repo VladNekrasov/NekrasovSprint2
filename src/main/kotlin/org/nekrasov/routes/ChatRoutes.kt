@@ -8,16 +8,13 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
-import org.nekrasov.domain.dto.request.CreateChatDto
-import org.nekrasov.domain.dto.request.JoinLeaveChatDto
-import org.nekrasov.domain.dto.request.ReadChatDto
-import org.nekrasov.domain.dto.request.UpdateChatDto
+import kotlinx.serialization.json.Json
+import org.nekrasov.domain.dto.request.*
+import org.nekrasov.domain.dto.response.ResponseMessageDto
 import org.nekrasov.domain.dto.response.userToUserDto
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.ChatService
 import org.nekrasov.domain.service.WebSocketService
-import org.nekrasov.exceptions.IncompatibleQueryParameterTypeException
-import org.nekrasov.exceptions.MissingQueryParameterException
 import org.nekrasov.exceptions.UnauthorizedException
 
 fun Route.chatRoutes(authService: AuthService,
@@ -155,6 +152,21 @@ fun Route.chatRoutes(authService: AuthService,
     }
 
     webSocket("/chat"){
+        try {
+            //val room = webSocketService.onConnect(idChat, this)
+            incoming.consumeEach {
+                frame ->
+                if (frame is Frame.Text) {
+                    val sendMessageDto = Json.decodeFromString<ResponseMessageDto>(frame.readText())
+                    send(Frame.Text(sendMessageDto.toString()))
+                }
+            }
+        } catch (e: Exception) {
+            println(e.localizedMessage)
+            //
+        } finally {
+            //
+        }
 //        val id = call.parameters["id"] ?: run{
 //            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id not specified in query"))
 //            return@webSocket

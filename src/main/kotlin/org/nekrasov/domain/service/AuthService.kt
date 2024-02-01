@@ -1,5 +1,6 @@
 package org.nekrasov.domain.service
 
+import kotlinx.datetime.Clock
 import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateUserDto
@@ -7,7 +8,6 @@ import org.nekrasov.domain.dto.request.ReadUserDto
 import org.nekrasov.domain.models.User
 import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
-import java.time.LocalDateTime
 
 class AuthService(private val userRepository: UserRepository, private val chatRepository: ChatRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): Boolean {
@@ -18,7 +18,7 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
                 lastName = createUserDto.lastName,
                 password = hashPassword(createUserDto.password),
                 token = null,
-                registrationTime = LocalDateTime.now(),
+                registrationTime = Clock.System.now(),
                 deleted = false
             )
             userRepository.create(user)

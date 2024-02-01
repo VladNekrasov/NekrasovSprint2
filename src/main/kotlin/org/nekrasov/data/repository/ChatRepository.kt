@@ -1,7 +1,8 @@
 package org.nekrasov.data.repository
 
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.tabels.ChatTable
@@ -11,7 +12,7 @@ class ChatRepository {
         id = row[ChatTable.id].value,
         title = row[ChatTable.title],
         creatorId = row[ChatTable.creatorId],
-        creationTime = row[ChatTable.creationTime],
+        creationTime = row[ChatTable.creationTime].toKotlinInstant(),
         deleted = row[ChatTable.deleted]
     )
 
@@ -19,7 +20,7 @@ class ChatRepository {
         val id = ChatTable.insertAndGetId {
             it[title] = chat.title
             it[creatorId] = chat.creatorId
-            it[creationTime] = chat.creationTime
+            it[creationTime] = chat.creationTime.toJavaInstant()
             it[deleted] = chat.deleted
         }
         chat.copy(id = id.value)
@@ -36,7 +37,7 @@ class ChatRepository {
         ChatTable.update({ ChatTable.id eq chat.id }) {
             it[title] = chat.title
             it[creatorId] = chat.creatorId
-            it[creationTime] = chat.creationTime
+            it[creationTime] = chat.creationTime.toJavaInstant()
             it[deleted] = chat.deleted
         } > 0
     }

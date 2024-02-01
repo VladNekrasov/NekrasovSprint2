@@ -1,7 +1,8 @@
 package org.nekrasov.data.repository
 
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.tabels.UserTable
@@ -15,7 +16,7 @@ class UserRepository {
         lastName = row[UserTable.lastName],
         password = row[UserTable.password],
         token = row[UserTable.token],
-        registrationTime = row[UserTable.registrationTime],
+        registrationTime = row[UserTable.registrationTime].toKotlinInstant(),
         deleted = row[UserTable.deleted]
     )
 
@@ -26,7 +27,7 @@ class UserRepository {
             it[lastName] = user.lastName
             it[password] = user.password
             it[token] = user.token
-            it[registrationTime] = user.registrationTime
+            it[registrationTime] = user.registrationTime.toJavaInstant()
             it[deleted] = user.deleted
         }
         user.copy(id = id.value)
@@ -60,7 +61,7 @@ class UserRepository {
             it[lastName] = user.lastName
             it[password] = user.password
             it[token] = user.token
-            it[registrationTime] = user.registrationTime
+            it[registrationTime] = user.registrationTime.toJavaInstant()
             it[deleted] = user.deleted
         } > 0
     }

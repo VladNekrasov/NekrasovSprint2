@@ -1,18 +1,19 @@
 package org.nekrasov.data.repository
 
+import kotlinx.datetime.toJavaInstant
+import kotlinx.datetime.toKotlinInstant
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.UserChat
-import org.nekrasov.domain.tabels.ChatTable
 import org.nekrasov.domain.tabels.UserChatTable
 
 class UserChatRepository {
     private fun resultRowToUserChat(row: ResultRow) = UserChat(
         userId = row[UserChatTable.userId],
         chatId = row[UserChatTable.chatId],
-        entryTime = row[UserChatTable.entryTime]
+        entryTime = row[UserChatTable.entryTime].toKotlinInstant()
     )
 
     suspend fun create(userChat: UserChat): Boolean = dbQuery {
@@ -21,7 +22,7 @@ class UserChatRepository {
                 UserChatTable.insert {
                     it[userId] = userChat.userId
                     it[chatId] = userChat.chatId
-                    it[entryTime] = userChat.entryTime
+                    it[entryTime] = userChat.entryTime.toJavaInstant()
                 }
                 return@transaction true
             } else {
@@ -31,11 +32,11 @@ class UserChatRepository {
     }
 
     suspend fun deleteUser(id: Long): Boolean = dbQuery {
-        UserChatTable.deleteWhere { UserChatTable.userId eq id } > 0
+        UserChatTable.deleteWhere { userId eq id } > 0
     }
 
     suspend fun deleteChat(id: Long): Boolean = dbQuery {
-        UserChatTable.deleteWhere { UserChatTable.chatId eq id } > 0
+        UserChatTable.deleteWhere { chatId eq id } > 0
     }
 
     suspend fun delete(userId: Long, chatId: Long): Boolean = dbQuery {
