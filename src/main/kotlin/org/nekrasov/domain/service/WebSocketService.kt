@@ -11,15 +11,14 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketService(private val messageRepository: MessageRepository) {
     private val connections = ConcurrentHashMap<Long, MutableList<DefaultWebSocketServerSession>>()
 
-    fun onConnect(id: Long, currentSession: DefaultWebSocketServerSession): MutableList<DefaultWebSocketServerSession> {
+    fun onConnect(id: Long, currentSession: DefaultWebSocketServerSession){
         val room = connections[id]?.apply {
             add(currentSession)
         } ?: mutableListOf(currentSession)
         connections[id]=room
-        return room
     }
 
-    suspend fun onMessage(content: String, room: MutableList<DefaultWebSocketServerSession>, idChat: Long){
+    suspend fun onMessage(content: String, idChat: Long, currentSession: DefaultWebSocketServerSession){
         val sendMessageDto = Json.decodeFromString<SendMessageDto>(content)
         val message = Message(
             text = sendMessageDto.text,
@@ -29,12 +28,13 @@ class WebSocketService(private val messageRepository: MessageRepository) {
             deleted = false
         )
         messageRepository.create(message)
-        room.forEach{
-            it.send(content)
+        connections[idChat]?.forEach{
+            if (it != currentSession)
+                it.send(content)
         }
     }
 
-    suspend fun onClose(id: Long, currentSession: DefaultWebSocketServerSession){
+    fun onClose(id: Long, currentSession: DefaultWebSocketServerSession){
         connections[id]?.run{
             this.remove(currentSession)
         }

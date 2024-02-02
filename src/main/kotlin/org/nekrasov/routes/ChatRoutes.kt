@@ -147,11 +147,11 @@ fun Route.chatRoutes(authService: AuthService,
         }
 
         try {
-            val room = webSocketService.onConnect(idChat, this)
+            webSocketService.onConnect(idChat, this)
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
                 val receivedText = frame.readText()
-                webSocketService.onMessage(receivedText, room, idChat)
+                webSocketService.onMessage(receivedText, idChat, this)
             }
         } catch (e: Exception) {
             println(e.localizedMessage)
