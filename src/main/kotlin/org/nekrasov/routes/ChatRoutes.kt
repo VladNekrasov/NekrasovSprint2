@@ -7,6 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import io.ktor.websocket.serialization.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
 import org.nekrasov.domain.dto.request.*
@@ -123,57 +124,40 @@ fun Route.chatRoutes(authService: AuthService,
         }
     }
 
-    webSocket("/chat"){
+    webSocket("/chat-socket"){
+        val token = call.request.headers["X-Auth-Token"]
+        if (token == null){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Missing  X-Auth-Token header"))
+            return@webSocket
+        }
+
+        if (!authService.checkToken(token)){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not authorized"))
+            return@webSocket
+        }
+
+        val id = call.parameters["id"] ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id not specified in query"))
+            return@webSocket
+        }
+
+        val idChat = id.toLongOrNull() ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id requires the Long type"))
+            return@webSocket
+        }
+
         try {
-            //val room = webSocketService.onConnect(idChat, this)
-            incoming.consumeEach {
-                frame ->
-                if (frame is Frame.Text) {
-                    val sendMessageDto = Json.decodeFromString<ResponseMessageDto>(frame.readText())
-                    send(Frame.Text(sendMessageDto.toString()))
-                }
+            val room = webSocketService.onConnect(idChat, this)
+            for (frame in incoming) {
+                frame as? Frame.Text ?: continue
+                val receivedText = frame.readText()
+                webSocketService.onMessage(receivedText, room, idChat)
             }
         } catch (e: Exception) {
             println(e.localizedMessage)
-            //
+            webSocketService.onClose(idChat, this)
         } finally {
-            //
+            webSocketService.onClose(idChat, this)
         }
-//        val id = call.parameters["id"] ?: run{
-//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id not specified in query"))
-//            return@webSocket
-//        }
-//
-//        val idChat = id.toLongOrNull() ?: run{
-//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id requires the Long type"))
-//            return@webSocket
-//        }
-//
-//
-//        chatService.getChat(idChat) ?: run{
-//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Chat does not exist"))
-//            return@webSocket
-//        }
-//
-//        val token = call.request.headers["X-Auth-Token"]
-//        if (!authService.checkToken(token)){
-//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not authorized"))
-//            return@webSocket
-//        }
-//
-//        try {
-//            val room = webSocketService.onConnect(idChat, this)
-//            incoming.consumeEach {
-//                frame ->
-//                if (frame is Frame.Text) {
-//                    webSocketService.onMessage(frame.readText(), room, token!!)
-//                }
-//            }
-//        } catch (e: Exception) {
-//            webSocketService.onClose(idChat, this)
-//            println(e.localizedMessage)
-//        } finally {
-//            webSocketService.onClose(idChat, this)
-//        }
     }
 }

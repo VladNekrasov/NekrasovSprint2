@@ -5,6 +5,7 @@ import io.ktor.websocket.*
 import kotlinx.serialization.json.Json
 import org.nekrasov.data.repository.MessageRepository
 import org.nekrasov.domain.dto.request.SendMessageDto
+import org.nekrasov.domain.models.Message
 import java.util.concurrent.ConcurrentHashMap
 
 class WebSocketService(private val messageRepository: MessageRepository) {
@@ -18,8 +19,16 @@ class WebSocketService(private val messageRepository: MessageRepository) {
         return room
     }
 
-    suspend fun onMessage(content: String, room: MutableList<DefaultWebSocketServerSession>, token: String){
+    suspend fun onMessage(content: String, room: MutableList<DefaultWebSocketServerSession>, idChat: Long){
         val sendMessageDto = Json.decodeFromString<SendMessageDto>(content)
+        val message = Message(
+            text = sendMessageDto.text,
+            chat = idChat,
+            fromId = sendMessageDto.userId,
+            createTime = sendMessageDto.createTime,
+            deleted = false
+        )
+        messageRepository.create(message)
         room.forEach{
             it.send(content)
         }
