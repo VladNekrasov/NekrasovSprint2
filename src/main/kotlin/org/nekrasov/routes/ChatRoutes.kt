@@ -11,10 +11,13 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
 import org.nekrasov.domain.dto.request.*
 import org.nekrasov.domain.dto.response.ResponseMessageDto
-import org.nekrasov.domain.dto.response.userToUserDto
+import org.nekrasov.domain.dto.response.userToReadUserDto
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.ChatService
 import org.nekrasov.domain.service.WebSocketService
+import org.nekrasov.exceptions.IncompatibleQueryParameterTypeException
+import org.nekrasov.exceptions.MissingHeaderException
+import org.nekrasov.exceptions.MissingQueryParameterException
 import org.nekrasov.exceptions.UnauthorizedException
 
 fun Route.chatRoutes(authService: AuthService,
@@ -22,7 +25,7 @@ fun Route.chatRoutes(authService: AuthService,
                      webSocketService: WebSocketService){
     route("/chats") {
         post{
-            val token = call.request.headers["X-Auth-Token"]
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
 
@@ -30,11 +33,11 @@ fun Route.chatRoutes(authService: AuthService,
             if (chatService.createChat(createChatDto))
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             else
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Creator not found"))
+                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Duplicate user in chat"))
         }
 
         post("/join"){
-            val token = call.request.headers["X-Auth-Token"]
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
 
@@ -43,12 +46,12 @@ fun Route.chatRoutes(authService: AuthService,
             if (chatService.joinChat(joinLeaveChatDto)){
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Can't add user to chat"))
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Duplicate user in chat"))
             }
         }
 
         post("/leave"){
-            val token = call.request.headers["X-Auth-Token"]
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
 
@@ -62,92 +65,61 @@ fun Route.chatRoutes(authService: AuthService,
         }
 
         get{
-
-            val token = call.request.headers["X-Auth-Token"]
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
+            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
+            val idChat = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
-            val readChatDto = call.receive<ReadChatDto>()
-
-            chatService.getChat(readChatDto)?.let{
+            chatService.getChat(idChat)?.let{
                 call.respond(HttpStatusCode.Found, it)
             } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "Chat not found"))
         }
 
         get("participants"){
-            val token = call.request.headers["X-Auth-Token"]
-            if (!authService.checkToken(token)){
-                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
-                return@get
-            }
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
+            if (!authService.checkToken(token))
+                throw UnauthorizedException("User not authorized")
+            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
+            val idChat = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
-            val id = call.parameters["id"] ?: run{
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id not specified in query"))
-                return@get
-            }
-
-            val idChat = id.toLongOrNull() ?: run{
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id requires the Long type"))
-                return@get
-            }
-            call.respond(HttpStatusCode.OK, chatService.getChatParticipants(idChat).map(::userToUserDto))
+            call.respond(HttpStatusCode.OK, chatService.getChatParticipants(idChat).map(::userToReadUserDto))
         }
 
         patch{
-            val token = call.request.headers["X-Auth-Token"]
-            if (!authService.checkToken(token)){
-                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
-                return@patch
-            }
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
+            if (!authService.checkToken(token))
+                throw UnauthorizedException("User not authorized")
 
             val updateChatDto = call.receive<UpdateChatDto>()
 
-            if (authService.checkChat(updateChatDto.id, token!!) && chatService.updateChat(updateChatDto)){
+            if (chatService.updateChat(updateChatDto)){
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             } else {
-                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Refusal to edit chat"))
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Refusal to edit chat"))
             }
         }
 
         delete {
-            val token = call.request.headers["X-Auth-Token"]
-            if (!authService.checkToken(token)){
-                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
-                return@delete
-            }
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
+            if (!authService.checkToken(token))
+                throw UnauthorizedException("User not authorized")
+            val deleteChatDto = call.receive<DeleteChatDto>()
 
-            val id = call.parameters["id"] ?: run{
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id not specified in query"))
-                return@delete
-            }
-
-            val idChat = id.toLongOrNull() ?: run{
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Parameter id requires the Long type"))
-                return@delete
-            }
-
-            if (authService.checkChat(idChat, token!!) && chatService.deleteChat(idChat)){
+            if (chatService.deleteChat(deleteChatDto)){
                 call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
             } else {
-                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Refusal to delete chat"))
+                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Refusal to delete chat"))
             }
         }
 
-
-
         get("/all"){
-            val token = call.request.headers["X-Auth-Token"]
-            if (!authService.checkToken(token)){
-                call.respond(HttpStatusCode.Unauthorized, mapOf("status" to "User not authorized"))
-                return@get
-            }
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
+            if (!authService.checkToken(token))
+                throw UnauthorizedException("User not authorized")
 
             val chatList = chatService.getAllChats()
-            if (chatList.isEmpty()){
-                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Chats not found"))
-            } else {
-                call.respond(HttpStatusCode.Found, chatList)
-            }
+            call.respond(HttpStatusCode.OK, chatList)
         }
     }
 

@@ -4,7 +4,7 @@ import kotlinx.datetime.Clock
 import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateUserDto
-import org.nekrasov.domain.dto.request.ReadUserDto
+import org.nekrasov.domain.dto.request.LoginUserDto
 import org.nekrasov.domain.models.User
 import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
@@ -23,32 +23,26 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
             )
             userRepository.create(user)
             true
-        } else {
+        } else
             false
-        }
     }
 
-    suspend fun loginUser(readUserDto: ReadUserDto): String? {
-        val user = userRepository.readByUsername(readUserDto.username)
-        if (user == null || !checkPassword(readUserDto.password, user.password)){
+    suspend fun loginUser(loginUserDto: LoginUserDto): String? {
+        val user = userRepository.readByUsername(loginUserDto.username)
+        if (user == null || !checkPassword(loginUserDto.password, user.password)){
             return null
         }
-        val token = hashPassword(readUserDto.username)
+        val token = hashPassword(loginUserDto.username)
         userRepository.updateToken(user.id, token)
         return token
     }
 
-    suspend fun logoutUser(token: String?): Boolean {
-        if (token == null)
-            return false
+    suspend fun logoutUser(token: String): Boolean {
         return userRepository.deleteToken(token)
     }
 
-    suspend fun checkToken(token: String?): Boolean {
-        if (token == null)
-            return false
-        val user = userRepository.readByToken(token)
-        return user != null
+    suspend fun checkToken(token: String): Boolean {
+        return userRepository.readByToken(token) != null
     }
 
     suspend fun checkUser(idConsumer: Long, token: String): Boolean {

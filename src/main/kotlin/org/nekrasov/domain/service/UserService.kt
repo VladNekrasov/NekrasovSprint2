@@ -6,6 +6,8 @@ import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.UpdateUserDto
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.models.User
+import org.nekrasov.exceptions.ConflictException
+import org.nekrasov.exceptions.NotFoundException
 
 class UserService(private val userRepository: UserRepository,
                   private val chatRepository: ChatRepository,
@@ -35,8 +37,8 @@ class UserService(private val userRepository: UserRepository,
                 )
                 userRepository.update(user)
             } else
-                false
-        } ?: false
+                throw ConflictException("Duplicate username")
+        } ?: throw NotFoundException("User not found")
     }
 
     suspend fun deleteUser(id: Long): Boolean {

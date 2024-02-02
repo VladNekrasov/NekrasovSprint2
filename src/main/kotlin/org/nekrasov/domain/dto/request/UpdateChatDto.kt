@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdateChatDto (
-    val id: Long,
-    val title: String
+    val idChat: Long,
+    val title: String,
+    val idUser: Long
 )

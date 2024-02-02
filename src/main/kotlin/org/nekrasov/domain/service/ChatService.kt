@@ -4,22 +4,20 @@ import kotlinx.datetime.Clock
 import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserChatRepository
 import org.nekrasov.data.repository.UserRepository
-import org.nekrasov.domain.dto.request.CreateChatDto
-import org.nekrasov.domain.dto.request.JoinLeaveChatDto
-import org.nekrasov.domain.dto.request.ReadChatDto
-import org.nekrasov.domain.dto.request.UpdateChatDto
+import org.nekrasov.domain.dto.request.*
 import org.nekrasov.domain.models.Chat
 import org.nekrasov.domain.models.User
 import org.nekrasov.domain.models.UserChat
+import org.nekrasov.exceptions.ConflictException
+import org.nekrasov.exceptions.NotFoundException
 
 class ChatService(private val chatRepository: ChatRepository,
                   private val userRepository: UserRepository,
                   private val userChatRepository: UserChatRepository
 ) {
     suspend fun createChat(createChatDto: CreateChatDto): Boolean{
-        return if (userRepository.read(createChatDto.creatorId) != null){
+        if (userRepository.read(createChatDto.creatorId) != null){
             val chat = Chat(
-                id = 0,
                 title = createChatDto.title,
                 creatorId = createChatDto.creatorId,
                 creationTime = Clock.System.now(),
@@ -31,10 +29,9 @@ class ChatService(private val chatRepository: ChatRepository,
                 chatId = chatId,
                 entryTime = chat.creationTime
             )
-            userChatRepository.create(userChat)
-            true
+            return userChatRepository.create(userChat)
         } else {
-            false
+            throw NotFoundException("Creator not found")
         }
     }
 
@@ -42,33 +39,41 @@ class ChatService(private val chatRepository: ChatRepository,
         return chatRepository.allChats()
     }
 
-    suspend fun getChat(readChatDto: ReadChatDto): Chat? {
-        return userRepository.read(readChatDto.userId)?.let {
-            chatRepository.read(readChatDto.chatId)?.let { it2->
-               if (userChatRepository.getUsersId(it2.id).contains(it.id))
-                   chatRepository.read(it2.id)
-               else
-                   null
-            }
-        }
+    suspend fun getChat(idChat: Long): Chat? {
+//        return userRepository.read(readChatDto.userId)?.let {
+//            chatRepository.read(readChatDto.chatId)?.let { it2->
+//               if (userChatRepository.getUsersId(it2.id).contains(it.id))
+//                   chatRepository.read(it2.id)
+//               else
+//                   null
+//            }
+//        }
+        return chatRepository.read(idChat)
     }
 
     suspend fun updateChat(updateChatDto: UpdateChatDto): Boolean {
-        return chatRepository.read(updateChatDto.id)?.let{
+        return chatRepository.read(updateChatDto.idChat)?.let{
             val chat = Chat(
-                id = updateChatDto.id,
+                id = updateChatDto.idChat,
                 title = updateChatDto.title,
                 creatorId = it.creatorId,
                 creationTime = it.creationTime,
                 deleted = it.deleted
             )
-            chatRepository.update(chat)
-        } ?: false
+            if (chat.creatorId == updateChatDto.idUser)
+                chatRepository.update(chat)
+            else
+                throw ConflictException("User is not the creator")
+        } ?: throw NotFoundException("Chat not found")
     }
 
-    suspend fun deleteChat(id: Long): Boolean {
-        userChatRepository.deleteChat(id)
-        return chatRepository.delete(id)
+    suspend fun deleteChat(deleteChatDto: DeleteChatDto): Boolean {
+        chatRepository.read(deleteChatDto.idChat)?.let {
+            if (it.creatorId != deleteChatDto.idUser)
+                throw ConflictException("User is not the creator")
+            userChatRepository.deleteChat(deleteChatDto.idChat)
+            return chatRepository.delete(deleteChatDto.idChat)
+        } ?: throw NotFoundException("Chat not found")
     }
 
     suspend fun joinChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
@@ -80,8 +85,8 @@ class ChatService(private val chatRepository: ChatRepository,
                 entryTime = Clock.System.now()
             )
             userChatRepository.create(userChat)
-            } ?: false
-        } ?: false
+            } ?: throw NotFoundException("Chat not found")
+        } ?: throw NotFoundException("User not found")
     }
 
     suspend fun leaveChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
@@ -90,9 +95,9 @@ class ChatService(private val chatRepository: ChatRepository,
                 if (it2.creatorId != it.id)
                     userChatRepository.delete(it.id, it2.id)
                 else
-                    false
-            } ?: false
-        } ?: false
+                    throw ConflictException("Creator can't leave chat")
+            } ?: throw NotFoundException("Chat not found")
+        }  ?: throw NotFoundException("User not found")
     }
 
     suspend fun getChatParticipants(idChat: Long): List<User>{

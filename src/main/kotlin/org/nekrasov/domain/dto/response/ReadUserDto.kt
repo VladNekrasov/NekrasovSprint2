@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import org.nekrasov.domain.models.User
 
 @Serializable
-data class UserDto(
+data class ReadUserDto(
     val id: Long,
     val username: String,
     val firstName: String,
@@ -14,7 +14,7 @@ data class UserDto(
     val deleted: Boolean
 )
 
-fun userToUserDto(user: User) = UserDto(
+fun userToReadUserDto(user: User) = ReadUserDto(
     id = user.id,
     username = user.username,
     firstName = user.firstName,
