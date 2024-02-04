@@ -40,6 +40,7 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
                 token = hashPassword(it.username),
                 id = it.id
             )
+            userRepository.updateToken(responseLoginUserDto.id, responseLoginUserDto.token)
             responseLoginUserDto
         }
     }

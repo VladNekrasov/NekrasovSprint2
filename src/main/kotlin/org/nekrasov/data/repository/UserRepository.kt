@@ -85,10 +85,6 @@ class UserRepository {
         } > 0
     }
 
-    suspend fun allUsers(): List<User> = dbQuery {
-        UserTable.selectAll().map(::resultRowToUser)
-    }
-
     suspend fun allUsersPaginated(page: Long, size: Int): List<User> = dbQuery {
         val skip: Long = (page-1) * size
         UserTable.selectAll().limit(n = size, offset = skip).map(::resultRowToUser)

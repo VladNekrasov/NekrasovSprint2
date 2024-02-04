@@ -32,6 +32,9 @@ fun Application.configureExceptions() {
                 is ConflictException -> {
                     call.respond(HttpStatusCode.Conflict, mapOf("status" to throwable.message))
                 }
+                is ForbiddenException -> {
+                    call.respond(HttpStatusCode.Forbidden, mapOf("status" to throwable.message))
+                }
             }
         }
     }

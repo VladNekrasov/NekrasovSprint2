@@ -13,11 +13,7 @@ class UserService(private val userRepository: UserRepository,
                   private val chatRepository: ChatRepository,
                   private val userChatRepository: UserChatRepository
 ) {
-    suspend fun getAllUsers(): List<User> {
-        return userRepository.allUsers()
-    }
-
-    suspend fun getAllUsersPaginated(page: Long, size: Int): List<User> {
+    suspend fun getAllUsers(page: Long, size: Int): List<User> {
         return userRepository.allUsersPaginated(page, size)
     }
 
