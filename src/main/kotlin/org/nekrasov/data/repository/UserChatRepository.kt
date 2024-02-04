@@ -48,8 +48,10 @@ class UserChatRepository {
             .map {it[UserChatTable.userId]}
     }
 
-    suspend fun getChatsId(userId: Long): List<Long> = dbQuery {
+    suspend fun getChatsIdPaginated(userId: Long, page: Long, size: Int): List<Long> = dbQuery {
+        val skip: Long = (page-1) * size
         UserChatTable.select{UserChatTable.userId eq userId}
+            .limit(n = size, offset = skip)
             .map {it[UserChatTable.chatId]}
     }
 }

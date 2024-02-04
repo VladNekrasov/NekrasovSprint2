@@ -46,9 +46,9 @@ class UserService(private val userRepository: UserRepository,
         return userRepository.delete(id)
     }
 
-    suspend fun getUserChats(idUser: Long): List<Chat>{
+    suspend fun getUserChats(idUser: Long, page: Long, size: Int): List<Chat>{
         val chats = mutableListOf<Chat>()
-        val chatsId = userChatRepository.getChatsId(idUser)
+        val chatsId = userChatRepository.getChatsIdPaginated(idUser, page, size)
         chatsId.forEach{
             chatRepository.read(it)?.let {chat ->
                 chats.add(chat)

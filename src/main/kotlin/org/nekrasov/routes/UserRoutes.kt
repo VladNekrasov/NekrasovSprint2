@@ -83,11 +83,18 @@ fun Route.userRoutes(authService: AuthService,
             val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
             val idUser = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
+            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
+            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
+            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
+            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
+            if (size<=0 || page<=0)
+                throw IncompatibleQueryParameterTypeException("Parameter size and page more than zero")
+
             if (!authService.checkUser(idUser, token))
                 throw ForbiddenException("The current user does not have access to this information")
 
             userService.getUser(idUser)?.let {
-                call.respond(HttpStatusCode.OK, userService.getUserChats(idUser))
+                call.respond(HttpStatusCode.OK, userService.getUserChats(idUser, page, size))
             } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
         }
     }
