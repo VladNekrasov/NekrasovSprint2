@@ -79,6 +79,18 @@ fun Route.userRoutes(authService: AuthService,
             val userList = userService.getAllUsers()
             call.respond(HttpStatusCode.OK, userList.map(::userToReadUserDto))
         }
+        get("/all_pag"){
+            val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
+            if (!authService.checkToken(token))
+                throw UnauthorizedException("User not authorized")
+            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
+            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
+            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
+            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
+
+            val userList = userService.getAllUsersPaginated(page, size)
+            call.respond(HttpStatusCode.OK, userList.map(::userToReadUserDto))
+        }
 
     }
 }

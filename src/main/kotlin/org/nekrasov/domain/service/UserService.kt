@@ -17,6 +17,10 @@ class UserService(private val userRepository: UserRepository,
         return userRepository.allUsers()
     }
 
+    suspend fun getAllUsersPaginated(page: Long, size: Int): List<User> {
+        return userRepository.allUsersPaginated(page, size)
+    }
+
     suspend fun getUser(id: Long): User? {
         return userRepository.read(id)
     }

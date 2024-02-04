@@ -26,7 +26,7 @@ fun Application.module() {
     val userService = UserService(userRepository, chatRepository, userChatRepository)
     val webSocketService = WebSocketService(messageRepository)
     DatabaseFactory.init(environment.config)
-    configureRequestValidation(userService)
+    configureRequestValidation()
     configureSerialization()
     configureAuth()
     configureWebSockets()

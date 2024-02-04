@@ -5,13 +5,17 @@ import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateUserDto
 import org.nekrasov.domain.dto.request.LoginUserDto
+import org.nekrasov.domain.dto.response.ResponseLoginUserDto
 import org.nekrasov.domain.models.User
+import org.nekrasov.exceptions.ConflictException
 import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
 
 class AuthService(private val userRepository: UserRepository, private val chatRepository: ChatRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): Boolean {
-        return if (userRepository.readByUsername(createUserDto.username) == null) {
+        return if (userRepository.readByUsername(createUserDto.username) != null)
+            false
+        else {
             val user = User(
                 username = createUserDto.username,
                 firstName = createUserDto.firstName,
@@ -23,18 +27,21 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
             )
             userRepository.create(user)
             true
-        } else
-            false
+        }
     }
 
-    suspend fun loginUser(loginUserDto: LoginUserDto): String? {
-        val user = userRepository.readByUsername(loginUserDto.username)
-        if (user == null || !checkPassword(loginUserDto.password, user.password)){
-            return null
+    suspend fun loginUser(loginUserDto: LoginUserDto): ResponseLoginUserDto? {
+        return userRepository.readByUsername(loginUserDto.username)?.let {
+            if (!checkPassword(loginUserDto.password, it.password))
+                throw ConflictException("Incorrect password")
+            if (it.deleted)
+                throw ConflictException("User deleted")
+            val responseLoginUserDto = ResponseLoginUserDto(
+                token = hashPassword(it.username),
+                id = it.id
+            )
+            responseLoginUserDto
         }
-        val token = hashPassword(loginUserDto.username)
-        userRepository.updateToken(user.id, token)
-        return token
     }
 
     suspend fun logoutUser(token: String): Boolean {
