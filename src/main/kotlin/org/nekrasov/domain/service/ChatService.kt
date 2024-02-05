@@ -16,7 +16,9 @@ class ChatService(private val chatRepository: ChatRepository,
                   private val userChatRepository: UserChatRepository
 ) {
     suspend fun createChat(createChatDto: CreateChatDto): Boolean{
-        if (userRepository.read(createChatDto.creatorId) != null){
+        if (userRepository.read(createChatDto.creatorId) == null){
+            throw NotFoundException("Creator not found")
+        } else {
             val chat = Chat(
                 title = createChatDto.title,
                 creatorId = createChatDto.creatorId,
@@ -30,24 +32,14 @@ class ChatService(private val chatRepository: ChatRepository,
                 entryTime = chat.creationTime
             )
             return userChatRepository.create(userChat)
-        } else {
-            throw NotFoundException("Creator not found")
         }
     }
 
-    suspend fun getAllChats(): List<Chat> {
-        return chatRepository.allChats()
+    suspend fun getAllChats(page: Long, size: Int): List<Chat> {
+        return chatRepository.allChats(page, size)
     }
 
     suspend fun getChat(idChat: Long): Chat? {
-//        return userRepository.read(readChatDto.userId)?.let {
-//            chatRepository.read(readChatDto.chatId)?.let { it2->
-//               if (userChatRepository.getUsersId(it2.id).contains(it.id))
-//                   chatRepository.read(it2.id)
-//               else
-//                   null
-//            }
-//        }
         return chatRepository.read(idChat)
     }
 
@@ -67,31 +59,33 @@ class ChatService(private val chatRepository: ChatRepository,
         } ?: throw NotFoundException("Chat not found")
     }
 
-    suspend fun deleteChat(deleteChatDto: DeleteChatDto): Boolean {
-        chatRepository.read(deleteChatDto.idChat)?.let {
-            if (it.creatorId != deleteChatDto.idUser)
+    suspend fun deleteChat(chatDto: ChatDto): Boolean {
+        chatRepository.read(chatDto.chatId)?.let {
+            if (it.creatorId != chatDto.userId)
                 throw ConflictException("User is not the creator")
-            userChatRepository.deleteChat(deleteChatDto.idChat)
-            return chatRepository.delete(deleteChatDto.idChat)
+            userChatRepository.deleteChat(chatDto.chatId)
+            return chatRepository.delete(chatDto.chatId)
         } ?: throw NotFoundException("Chat not found")
     }
 
-    suspend fun joinChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
-        return userRepository.read(joinLeaveChatDto.userId)?.let {
-            chatRepository.read(joinLeaveChatDto.chatId)?.let {it2 ->
+    suspend fun joinChat(chatDto: ChatDto): Boolean{
+        return userRepository.read(chatDto.userId)?.let {
+            chatRepository.read(chatDto.chatId)?.let {it2 ->
+                if (it2.deleted)
+                    throw ConflictException("Chat deleted")
                 val userChat = UserChat(
                 userId = it.id,
                 chatId = it2.id,
                 entryTime = Clock.System.now()
-            )
-            userChatRepository.create(userChat)
+                )
+                userChatRepository.create(userChat)
             } ?: throw NotFoundException("Chat not found")
         } ?: throw NotFoundException("User not found")
     }
 
-    suspend fun leaveChat(joinLeaveChatDto: JoinLeaveChatDto): Boolean{
-        return userRepository.read(joinLeaveChatDto.userId)?.let {
-            chatRepository.read(joinLeaveChatDto.chatId)?.let {it2 ->
+    suspend fun leaveChat(chatDto: ChatDto): Boolean{
+        return userRepository.read(chatDto.userId)?.let {
+            chatRepository.read(chatDto.chatId)?.let {it2 ->
                 if (it2.creatorId != it.id)
                     userChatRepository.delete(it.id, it2.id)
                 else
@@ -100,9 +94,13 @@ class ChatService(private val chatRepository: ChatRepository,
         }  ?: throw NotFoundException("User not found")
     }
 
-    suspend fun getChatParticipants(idChat: Long): List<User>{
+    suspend fun checkParticipant(idChat: Long, idUser: Long): Boolean{
+        return userChatRepository.getUsersId(idChat).contains(idUser)
+    }
+
+    suspend fun getChatParticipants(idChat: Long, page: Long, size: Int): List<User>{
         val participants = mutableListOf<User>()
-        val usersId = userChatRepository.getUsersId(idChat)
+        val usersId = userChatRepository.getUsersIdPaginated(idChat, page, size)
         usersId.forEach{
             userRepository.read(it)?.let {user ->
                 participants.add(user)

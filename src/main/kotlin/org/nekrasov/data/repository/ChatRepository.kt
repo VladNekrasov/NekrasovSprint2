@@ -48,7 +48,10 @@ class ChatRepository {
         } > 0
     }
 
-    suspend fun allChats(): List<Chat> = dbQuery {
-        ChatTable.selectAll().map(::resultRowToChat)
+    suspend fun allChats(page: Long, size: Int): List<Chat> = dbQuery {
+        val skip: Long = (page-1) * size
+        ChatTable.selectAll()
+            .limit(n = size, offset = skip)
+            .map(::resultRowToChat)
     }
 }
