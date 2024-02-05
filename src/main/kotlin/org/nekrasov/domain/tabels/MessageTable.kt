@@ -8,7 +8,7 @@ import java.time.Instant
 
 object MessageTable : LongIdTable("message") {
     val chatId: Column<Long> = long("chat_id").references(ChatTable.id, onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
-    val text: Column<String?> = varchar("text", 400).nullable()
+    val text: Column<String> = varchar("text", 400)
     val fromId: Column<Long> = long("from_id").references(UserTable.id,  onDelete = ReferenceOption.CASCADE, onUpdate = ReferenceOption.CASCADE)
     val createTime: Column<Instant> = timestamp("create_time")
     val deleted: Column<Boolean> = bool("deleted")

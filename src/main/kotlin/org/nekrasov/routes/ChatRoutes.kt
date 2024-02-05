@@ -155,22 +155,51 @@ fun Route.chatRoutes(authService: AuthService,
             return@webSocket
         }
 
-        val id = call.parameters["id"] ?: run{
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id not specified in query"))
+        val idU = call.parameters["idUser"] ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter idUser not specified in query"))
             return@webSocket
         }
 
-        val idChat = id.toLongOrNull() ?: run{
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter id requires the Long type"))
+        val idUser = idU.toLongOrNull() ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter idUser requires the Long type"))
+            return@webSocket
+        }
+
+        val idC = call.parameters["idChat"] ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter idChat not specified in query"))
+            return@webSocket
+        }
+
+        val idChat = idC.toLongOrNull() ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter idChat requires the Long type"))
+            return@webSocket
+        }
+
+        val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
+        val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
+        val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
+        val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
+        if (size<=0 || page<=0){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter size and page more than zero"))
+            return@webSocket
+        }
+
+        if (!authService.checkUser(idUser, token)){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "The current user does not have access to this information"))
+            return@webSocket
+        }
+
+        if (!chatService.checkParticipant(idChat, idUser)){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "The current user is not a participant"))
             return@webSocket
         }
 
         try {
-            webSocketService.onConnect(idChat, this)
+            webSocketService.onConnect(idChat, page, size, this)
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
                 val receivedText = frame.readText()
-                webSocketService.onMessage(receivedText, idChat, this)
+                webSocketService.onMessage(receivedText, idChat, idUser, this)
             }
         } catch (e: Exception) {
             println(e.localizedMessage)

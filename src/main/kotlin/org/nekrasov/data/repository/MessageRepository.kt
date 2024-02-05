@@ -53,7 +53,11 @@ class MessageRepository{
         } > 0
     }
 
-    suspend fun allMessages(): List<Message> = dbQuery {
-        MessageTable.selectAll().map(::resultRowToMessage)
+    suspend fun allMessagesPaginated(page: Long, size: Int, chatId: Long): List<Message> = dbQuery {
+        val skip: Long = (page-1) * size
+        MessageTable.select{MessageTable.chatId eq chatId}
+            .orderBy(MessageTable.createTime, SortOrder.DESC)
+            .limit(n = size, offset = skip)
+            .map(::resultRowToMessage)
     }
 }

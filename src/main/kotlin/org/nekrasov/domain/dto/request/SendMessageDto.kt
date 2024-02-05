@@ -5,7 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SendMessageDto(
-    val userId: Long,
-    val text: String?,
+    val text: String,
     val createTime: Instant
 )

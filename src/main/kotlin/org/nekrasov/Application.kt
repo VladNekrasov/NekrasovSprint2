@@ -6,10 +6,7 @@ import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.MessageRepository
 import org.nekrasov.data.repository.UserChatRepository
 import org.nekrasov.data.repository.UserRepository
-import org.nekrasov.domain.service.AuthService
-import org.nekrasov.domain.service.ChatService
-import org.nekrasov.domain.service.UserService
-import org.nekrasov.domain.service.WebSocketService
+import org.nekrasov.domain.service.*
 import org.nekrasov.plugins.*
 
 fun main(args: Array<String>) {
@@ -25,6 +22,7 @@ fun Application.module() {
     val chatService = ChatService(chatRepository, userRepository, userChatRepository)
     val userService = UserService(userRepository, chatRepository, userChatRepository)
     val webSocketService = WebSocketService(messageRepository)
+    val messageService = MessageService(messageRepository)
     DatabaseFactory.init(environment.config)
     configureRequestValidation()
     configureSerialization()
@@ -34,7 +32,8 @@ fun Application.module() {
         authService = authService,
         chatService = chatService,
         userService = userService,
-        webSocketService = webSocketService
+        webSocketService = webSocketService,
+        messageService = messageService
     )
     configureExceptions()
 }
