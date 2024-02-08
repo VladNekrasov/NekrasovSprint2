@@ -15,7 +15,7 @@ fun Application.configureRoutes(authService: AuthService, chatService: ChatServi
             call.respondText("Hello")
         }
         authRoutes(authService)
-        chatRoutes(authService, chatService, webSocketService)
+        chatRoutes(authService, userService, chatService, webSocketService)
         userRoutes(authService, userService)
         messageRoutes(messageService, authService, chatService)
     }

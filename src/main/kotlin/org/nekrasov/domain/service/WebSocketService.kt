@@ -13,12 +13,12 @@ import java.util.concurrent.ConcurrentHashMap
 class WebSocketService(private val messageRepository: MessageRepository) {
     private val connections = ConcurrentHashMap<Long, MutableList<DefaultWebSocketServerSession>>()
 
-    suspend fun onConnect(id: Long, page: Long, size: Int, currentSession: DefaultWebSocketServerSession){
+    suspend fun onConnect(id: Long, size: Int, currentSession: DefaultWebSocketServerSession){
         val room = connections[id]?.apply {
             add(currentSession)
         } ?: mutableListOf(currentSession)
         connections[id]=room
-        messageRepository.allMessagesPaginated(page, size, id).forEach{
+        messageRepository.allMessagesPaginated(1, size, id).forEach{
             val responseMessageDto = messageToResponseMessageDto(it)
             currentSession.send(Json.encodeToString(responseMessageDto))
         }

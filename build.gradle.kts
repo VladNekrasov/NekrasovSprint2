@@ -5,6 +5,9 @@ val exposedVersion: String by project
 val postgresqlVersion: String by project
 val jbcryptVersion: String by project
 val kotlinxdatetimeVersion: String by project
+val junitVersion: String by project
+val coroutinesTestVersion: String by project
+val mockitoVersion: String by project
 
 plugins {
     kotlin("jvm") version "1.9.21"
@@ -50,7 +53,19 @@ dependencies {
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
-    testImplementation(kotlin("test"))
+    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")
+
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+
+    testImplementation( "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesTestVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
 }
 
 tasks.test {

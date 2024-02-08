@@ -7,14 +7,15 @@ import org.nekrasov.domain.dto.request.CreateUserDto
 import org.nekrasov.domain.dto.request.LoginUserDto
 import org.nekrasov.domain.dto.response.ResponseLoginUserDto
 import org.nekrasov.domain.models.User
-import org.nekrasov.exceptions.ConflictException
+import org.nekrasov.utils.ErrorCode
+import org.nekrasov.utils.ServiceResult
 import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
 
 class AuthService(private val userRepository: UserRepository, private val chatRepository: ChatRepository) {
-    suspend fun createUser(createUserDto: CreateUserDto): Boolean {
+    suspend fun createUser(createUserDto: CreateUserDto): ServiceResult<Unit> {
         return if (userRepository.readByUsername(createUserDto.username) != null)
-            false
+            ServiceResult.Error(ErrorCode.DUPLICATE_USERNAME)
         else {
             val user = User(
                 username = createUserDto.username,
@@ -26,23 +27,26 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
                 deleted = false
             )
             userRepository.create(user)
-            true
+            ServiceResult.Success(Unit)
         }
     }
 
-    suspend fun loginUser(loginUserDto: LoginUserDto): ResponseLoginUserDto? {
-        return userRepository.readByUsername(loginUserDto.username)?.let {
+    suspend fun loginUser(loginUserDto: LoginUserDto): ServiceResult<ResponseLoginUserDto> {
+        userRepository.readByUsername(loginUserDto.username)?.let {
             if (!checkPassword(loginUserDto.password, it.password))
-                throw ConflictException("Incorrect password")
+                return ServiceResult.Error(ErrorCode.INCORRECT_PASSWORD)
+
             if (it.deleted)
-                throw ConflictException("User deleted")
+                return ServiceResult.Error(ErrorCode.USER_DELETED)
+
             val responseLoginUserDto = ResponseLoginUserDto(
                 token = hashPassword(it.username),
                 id = it.id
             )
             userRepository.updateToken(responseLoginUserDto.id, responseLoginUserDto.token)
-            responseLoginUserDto
-        }
+            return ServiceResult.Success(responseLoginUserDto)
+
+        } ?: return ServiceResult.Error(ErrorCode.USER_NOT_FOUND)
     }
 
     suspend fun logoutUser(token: String): Boolean {

@@ -11,27 +11,32 @@ import org.nekrasov.domain.dto.request.*
 import org.nekrasov.domain.dto.response.userToReadUserDto
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.ChatService
+import org.nekrasov.domain.service.UserService
 import org.nekrasov.domain.service.WebSocketService
 import org.nekrasov.exceptions.*
+import org.nekrasov.utils.ServiceResult
+import org.nekrasov.utils.getQueryParameter
+import org.nekrasov.utils.respondErrorCode
 
 fun Route.chatRoutes(authService: AuthService,
+                     userService: UserService,
                      chatService: ChatService,
                      webSocketService: WebSocketService){
     route("api/v1/chats") {
+
         get{
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
-            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
-            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
-            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
-            if (size<=0 || page<=0)
-                throw IncompatibleQueryParameterTypeException("Parameter size and page more than zero")
 
-            val chatList = chatService.getAllChats(page, size)
-            call.respond(HttpStatusCode.OK, chatList)
+            val page = call.getQueryParameter<Long>("page")
+            val size = call.getQueryParameter<Int>("size")
+
+            chatService.getAllChats(page, size)?.let{
+                call.respond(HttpStatusCode.OK, it)
+            } ?: call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Parameter size and page more than zero"))
         }
+
         post{
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
@@ -39,12 +44,16 @@ fun Route.chatRoutes(authService: AuthService,
 
             val createChatDto = call.receive<CreateChatDto>()
             if (!authService.checkUser(createChatDto.creatorId, token))
-                throw ForbiddenException("The current user does not have access to this information")
+                throw ForbiddenException("The current user does not have access to create chat")
 
-            if (chatService.createChat(createChatDto))
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            else
-                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Duplicate user in chat"))
+            when(val result = chatService.createChat(createChatDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
+            }
         }
 
         post("/join"){
@@ -54,12 +63,15 @@ fun Route.chatRoutes(authService: AuthService,
 
             val chatDto = call.receive<ChatDto>()
             if (!authService.checkUser(chatDto.userId, token))
-                throw ForbiddenException("The current user does not have access to this information")
+                throw ForbiddenException("The current user does not have access to join operation")
 
-            if (chatService.joinChat(chatDto)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Duplicate user in chat"))
+            when(val result = chatService.joinChat(chatDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
             }
         }
 
@@ -72,10 +84,13 @@ fun Route.chatRoutes(authService: AuthService,
             if (!authService.checkUser(chatDto.userId, token))
                 throw ForbiddenException("The current user does not have access to this information")
 
-            if (chatService.leaveChat(chatDto)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Can't leave user from chat"))
+            when(val result = chatService.leaveChat(chatDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
             }
         }
 
@@ -83,10 +98,9 @@ fun Route.chatRoutes(authService: AuthService,
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
-            val idChat = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
+            val id = call.getQueryParameter<Long>("id")
 
-            chatService.getChat(idChat)?.let{
+            chatService.getChat(id)?.let{
                 call.respond(HttpStatusCode.Found, it)
             } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "Chat not found"))
         }
@@ -96,23 +110,21 @@ fun Route.chatRoutes(authService: AuthService,
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
 
-
-            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
-            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
-            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
-            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
-            if (size<=0 || page<=0)
-                throw IncompatibleQueryParameterTypeException("Parameter size and page more than zero")
+            val page = call.getQueryParameter<Long>("page")
+            val size = call.getQueryParameter<Int>("size")
 
             val chatDto = call.receive<ChatDto>()
             if (!authService.checkUser(chatDto.userId, token))
                 throw ForbiddenException("The current user does not have access to this information")
-            if (!chatService.checkParticipant(chatDto.chatId, chatDto.userId))
-                throw ForbiddenException("The current user is not a participant")
 
-            chatService.getChat(chatDto.chatId)?.let {
-                call.respond(HttpStatusCode.OK, chatService.getChatParticipants(chatDto.chatId, page, size).map(::userToReadUserDto))
-            } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "Chat not found"))
+            when(val result = chatService.getChatParticipants(chatDto, page, size)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, result.data.map(::userToReadUserDto))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
+            }
         }
 
         patch{
@@ -122,10 +134,13 @@ fun Route.chatRoutes(authService: AuthService,
 
             val updateChatDto = call.receive<UpdateChatDto>()
 
-            if (chatService.updateChat(updateChatDto)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Refusal to edit chat"))
+            when(val result = chatService.updateChat(updateChatDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
             }
         }
 
@@ -133,27 +148,31 @@ fun Route.chatRoutes(authService: AuthService,
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
+
             val chatDto = call.receive<ChatDto>()
 
-            if (chatService.deleteChat(chatDto)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Refusal to delete chat"))
+            when(val result = chatService.deleteChat(chatDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
             }
         }
     }
 
     webSocket("/chat-socket"){
-        val token = call.request.headers["X-Auth-Token"]
-        if (token == null){
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Missing  X-Auth-Token header"))
-            return@webSocket
-        }
-
-        if (!authService.checkToken(token)){
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not authorized"))
-            return@webSocket
-        }
+//        val token = call.request.headers["X-Auth-Token"]
+//        if (token == null){
+//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Missing  X-Auth-Token header"))
+//            return@webSocket
+//        }
+//
+//        if (!authService.checkToken(token)){
+//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not authorized"))
+//            return@webSocket
+//        }
 
         val idU = call.parameters["idUser"] ?: run{
             close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter idUser not specified in query"))
@@ -175,17 +194,34 @@ fun Route.chatRoutes(authService: AuthService,
             return@webSocket
         }
 
-        val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
-        val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
-        val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
-        val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
-        if (size<=0 || page<=0){
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter size and page more than zero"))
+        val sizeParameter = call.parameters["size"] ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter size not specified in query"))
             return@webSocket
         }
 
-        if (!authService.checkUser(idUser, token)){
-            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "The current user does not have access to this information"))
+        val size = sizeParameter.toIntOrNull() ?: run{
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter size requires the Int type"))
+            return@webSocket
+        }
+
+        if (size<=0){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Parameter size more than zero"))
+            return@webSocket
+        }
+
+
+//        if (!authService.checkUser(idUser, token)){
+//            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "The current user does not have access to this information"))
+//            return@webSocket
+//        }
+
+        if (userService.getUser(idUser) == null){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "User not found"))
+            return@webSocket
+        }
+
+        if (chatService.getChat(idChat) == null){
+            close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, "Chat not found"))
             return@webSocket
         }
 
@@ -195,7 +231,7 @@ fun Route.chatRoutes(authService: AuthService,
         }
 
         try {
-            webSocketService.onConnect(idChat, page, size, this)
+            webSocketService.onConnect(idChat, size, this)
             for (frame in incoming) {
                 frame as? Frame.Text ?: continue
                 val receivedText = frame.readText()

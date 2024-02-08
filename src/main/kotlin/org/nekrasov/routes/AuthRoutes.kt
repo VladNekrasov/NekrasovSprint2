@@ -10,42 +10,56 @@ import org.nekrasov.domain.dto.request.LoginUserDto
 import org.nekrasov.domain.dto.request.TokenDto
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.exceptions.MissingHeaderException
-import org.nekrasov.exceptions.UnauthorizedException
+import org.nekrasov.utils.ErrorCode
+import org.nekrasov.utils.ServiceResult
+import org.nekrasov.utils.respondErrorCode
 
 fun Route.authRoutes(authService: AuthService){
     route("/api/v1/auth") {
 
         post("/reg"){
             val createUserDto = call.receive<CreateUserDto>()
-            if (authService.createUser(createUserDto))
-                call.respond(HttpStatusCode.Created, mapOf("status" to "Ok"))
-            else
-                call.respond(HttpStatusCode.Conflict, mapOf("status" to "Duplicate username"))
+
+            when(val result = authService.createUser(createUserDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
+            }
         }
 
         post("/login"){
             val loginUserDto = call.receive<LoginUserDto>()
-            authService.loginUser(loginUserDto)?.let{
-                call.respond(HttpStatusCode.Found, it)
-            } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
+
+            when(val result = authService.loginUser(loginUserDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, result.data)
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
+            }
         }
 
         post("/logout"){
             val token: String = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
-            if (!authService.checkToken(token))
-                throw UnauthorizedException("User not authorized")
+
             if (authService.logoutUser(token))
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
+                call.respond(HttpStatusCode.Found, mapOf("message" to "Ok"))
             else
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "X-Auth-Token not exist"))
+                call.respondErrorCode(ErrorCode.USER_NOT_AUTHORIZED)
         }
 
         post("/check-token"){
             val tokenDto = call.receive<TokenDto>()
+
             if (authService.checkToken(tokenDto.token))
-                call.respond(HttpStatusCode.Found, mapOf("status" to "Ok"))
-            else
-                call.respond(HttpStatusCode.NotFound, mapOf("status" to "Invalid X-Auth-Token"))
+                call.respond(HttpStatusCode.Found, mapOf("message" to "Ok"))
+            else {
+                call.respondErrorCode(ErrorCode.USER_NOT_AUTHORIZED)
+            }
         }
     }
 }

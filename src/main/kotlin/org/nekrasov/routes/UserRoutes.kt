@@ -10,6 +10,9 @@ import org.nekrasov.domain.dto.response.userToReadUserDto
 import org.nekrasov.domain.service.AuthService
 import org.nekrasov.domain.service.UserService
 import org.nekrasov.exceptions.*
+import org.nekrasov.utils.ServiceResult
+import org.nekrasov.utils.getQueryParameter
+import org.nekrasov.utils.respondErrorCode
 
 
 fun Route.userRoutes(authService: AuthService,
@@ -20,27 +23,25 @@ fun Route.userRoutes(authService: AuthService,
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
-            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
-            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
-            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
-            if (size<=0 || page<=0)
-                throw IncompatibleQueryParameterTypeException("Parameter size and page more than zero")
 
-            val userList = userService.getAllUsers(page, size)
-            call.respond(HttpStatusCode.OK, userList.map(::userToReadUserDto))
+            val page = call.getQueryParameter<Long>("page")
+            val size = call.getQueryParameter<Int>("size")
+
+            userService.getAllUsers(page, size)?.let{
+                call.respond(HttpStatusCode.OK, it.map(::userToReadUserDto))
+            } ?: call.respond(HttpStatusCode.BadRequest, mapOf("message" to "Parameter size and page more than zero"))
         }
 
         get("/{id}"){
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
-            val idUser = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
-            userService.getUser(idUser)?.let{
+            val id = call.getQueryParameter<Long>("id")
+
+            userService.getUser(id)?.let{
                 call.respond(HttpStatusCode.Found, userToReadUserDto(it))
-            } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
+            } ?: call.respond(HttpStatusCode.NotFound, mapOf("message" to "User not found"))
         }
 
         patch{
@@ -50,12 +51,16 @@ fun Route.userRoutes(authService: AuthService,
 
             val updateUserDto = call.receive<UpdateUserDto>()
             if (!authService.checkUser(updateUserDto.id, token))
-                throw ForbiddenException("The current user does not have access to this information")
+                throw ForbiddenException("The current user does not have access to update operation")
 
-            if (userService.updateUser(updateUserDto)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
-            } else {
-                call.respond(HttpStatusCode.BadRequest, mapOf("status" to "Refusal to edit user"))
+
+            when(val result = userService.updateUser(updateUserDto)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
             }
         }
 
@@ -63,16 +68,16 @@ fun Route.userRoutes(authService: AuthService,
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
-            val idUser = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
-            if (!authService.checkUser(idUser, token))
-                throw ForbiddenException("The current user does not have access to this information")
+            val id = call.getQueryParameter<Long>("id")
 
-            if (userService.deleteUser(idUser)){
-                call.respond(HttpStatusCode.OK, mapOf("status" to "Ok"))
+            if (!authService.checkUser(id, token))
+                throw ForbiddenException("The current user does not have access to delete operation")
+
+            if (userService.deleteUser(id)){
+                call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
             } else {
-                call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
+                call.respond(HttpStatusCode.NotFound, mapOf("message" to "User not found"))
             }
         }
 
@@ -80,22 +85,22 @@ fun Route.userRoutes(authService: AuthService,
             val token = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
             if (!authService.checkToken(token))
                 throw UnauthorizedException("User not authorized")
-            val id = call.parameters["id"] ?: throw MissingQueryParameterException("Parameter id not specified in query")
-            val idUser = id.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter id requires the Long type")
 
-            val pageParameter = call.parameters["page"] ?: throw MissingQueryParameterException("Parameter page not specified in query")
-            val page = pageParameter.toLongOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter page requires the Long type")
-            val sizeParameter = call.parameters["size"] ?: throw MissingQueryParameterException("Parameter size not specified in query")
-            val size = sizeParameter.toIntOrNull() ?: throw IncompatibleQueryParameterTypeException("Parameter size requires the Int type")
-            if (size<=0 || page<=0)
-                throw IncompatibleQueryParameterTypeException("Parameter size and page more than zero")
+            val id = call.getQueryParameter<Long>("id")
+            val page = call.getQueryParameter<Long>("page")
+            val size = call.getQueryParameter<Int>("size")
 
-            if (!authService.checkUser(idUser, token))
+            if (!authService.checkUser(id, token))
                 throw ForbiddenException("The current user does not have access to this information")
 
-            userService.getUser(idUser)?.let {
-                call.respond(HttpStatusCode.OK, userService.getUserChats(idUser, page, size))
-            } ?: call.respond(HttpStatusCode.NotFound, mapOf("status" to "User not found"))
+            when(val result = userService.getUserChats(id, page, size)){
+                is ServiceResult.Success -> {
+                    call.respond(HttpStatusCode.OK, result)
+                }
+                is ServiceResult.Error -> {
+                    call.respondErrorCode(result.error)
+                }
+            }
         }
     }
 }

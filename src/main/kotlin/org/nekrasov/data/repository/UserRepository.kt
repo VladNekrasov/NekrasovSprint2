@@ -3,8 +3,11 @@ package org.nekrasov.data.repository
 import kotlinx.datetime.toJavaInstant
 import kotlinx.datetime.toKotlinInstant
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.nekrasov.data.DatabaseFactory.dbQuery
 import org.nekrasov.domain.models.User
+import org.nekrasov.domain.tabels.UserChatTable
 import org.nekrasov.domain.tabels.UserTable
 
 
@@ -73,10 +76,13 @@ class UserRepository {
     }
 
     suspend fun delete(id: Long): Boolean = dbQuery {
-        UserTable.update({UserTable.id eq id}){
-            it[deleted] = true
-            it[token] = null
-        } > 0
+        transaction {
+            UserChatTable.deleteWhere { userId eq id }
+            UserTable.update({UserTable.id eq id}){
+                it[deleted] = true
+                it[token] = null
+            } > 0
+        }
     }
 
     suspend fun deleteToken(token: String): Boolean = dbQuery{
