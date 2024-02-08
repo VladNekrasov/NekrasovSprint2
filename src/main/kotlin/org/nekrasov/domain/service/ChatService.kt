@@ -115,7 +115,7 @@ class ChatService(private val chatRepository: ChatRepository,
     suspend fun getChatParticipants(chatDto: ChatDto, page: Long, size: Int): ServiceResult<List<User>>{
         if (size<=0 || page<=0)
             return ServiceResult.Error(ErrorCode.INCORRECT_PAGE_SIZE)
-        if (checkParticipant(chatDto.chatId, chatDto.userId))
+        if (!checkParticipant(chatDto.chatId, chatDto.userId))
             return ServiceResult.Error(ErrorCode.USER_NOT_PARTICIPANT)
         getChat(chatDto.chatId) ?: return ServiceResult.Error(ErrorCode.CHAT_NOT_FOUND)
 

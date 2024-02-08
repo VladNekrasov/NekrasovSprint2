@@ -47,7 +47,7 @@ fun Route.authRoutes(authService: AuthService){
             val token: String = call.request.headers["X-Auth-Token"] ?: throw MissingHeaderException("Missing  X-Auth-Token header")
 
             if (authService.logoutUser(token))
-                call.respond(HttpStatusCode.Found, mapOf("message" to "Ok"))
+                call.respond(HttpStatusCode.OK, mapOf("message" to "Ok"))
             else
                 call.respondErrorCode(ErrorCode.USER_NOT_AUTHORIZED)
         }
