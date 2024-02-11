@@ -18,7 +18,7 @@ fun Application.module() {
     val chatRepository = ChatRepository()
     val userChatRepository = UserChatRepository()
     val messageRepository = MessageRepository()
-    val authService = AuthService(userRepository, chatRepository)
+    val authService = AuthService(userRepository)
     val chatService = ChatService(chatRepository, userRepository, userChatRepository)
     val userService = UserService(userRepository, chatRepository, userChatRepository)
     val webSocketService = WebSocketService(messageRepository)

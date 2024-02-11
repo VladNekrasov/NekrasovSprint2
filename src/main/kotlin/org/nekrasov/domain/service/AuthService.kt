@@ -1,7 +1,6 @@
 package org.nekrasov.domain.service
 
 import kotlinx.datetime.Clock
-import org.nekrasov.data.repository.ChatRepository
 import org.nekrasov.data.repository.UserRepository
 import org.nekrasov.domain.dto.request.CreateUserDto
 import org.nekrasov.domain.dto.request.LoginUserDto
@@ -12,7 +11,7 @@ import org.nekrasov.utils.ServiceResult
 import org.nekrasov.utils.checkPassword
 import org.nekrasov.utils.hashPassword
 
-class AuthService(private val userRepository: UserRepository, private val chatRepository: ChatRepository) {
+class AuthService(private val userRepository: UserRepository) {
     suspend fun createUser(createUserDto: CreateUserDto): ServiceResult<Unit> {
         return if (userRepository.readByUsername(createUserDto.username) != null)
             ServiceResult.Error(ErrorCode.DUPLICATE_USERNAME)
@@ -64,14 +63,5 @@ class AuthService(private val userRepository: UserRepository, private val chatRe
             false
         else
             userConsumer == produceConsumer
-    }
-
-    suspend fun checkChat(idConsumer: Long, token: String): Boolean {
-        val userConsumer = chatRepository.read(idConsumer)
-        val produceConsumer = userRepository.readByToken(token)
-        return if (userConsumer == null || produceConsumer == null)
-            false
-        else
-            userConsumer.creatorId == produceConsumer.id
     }
 }
